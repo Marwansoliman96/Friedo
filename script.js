@@ -8,7 +8,8 @@
    - CART: add/remove/qty + localStorage + WhatsApp checkout
    - Back To Top button
    - (Optional) Save order to Google Sheet (fire-and-forget)
-   - Customer data TTL (5 minutes)
+   - Customer Data TTL (5 minutes)
+   - Cart: Clear on Refresh + TTL (3 minutes inactivity)
    ========================= */
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -29,9 +30,29 @@ const NOTE_KEY = "menu_cart_note_v1";
 const CUSTOMER_KEY = "menu_customer_v1";
 const CUSTOMER_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
+/* ✅ السلة: Activity + TTL (3 دقائق عدم استخدام) */
+const CART_ACTIVITY_KEY = "menu_cart_last_activity_v1";
+const CART_TTL_MS = 3 * 60 * 1000; // 3 minutes
+
 /* ✅ لازم يكون /exec (مش /exe) */
 const SHEET_WEBAPP_URL =
   "https://script.google.com/macros/s/AKfycbwQaeNMjx-tYVAQYI8_R9OOOqj1P5m5go-llqZSZjPN0Bn5drpIu0SfYbyqEo8Rq2i5DA/exec";
+
+/* =========================
+   Cart: Clear on Refresh (early)
+   ========================= */
+(function clearCartOnRefreshEarly() {
+  try {
+    const nav = performance.getEntriesByType?.("navigation")?.[0];
+    const isReload = nav?.type === "reload";
+    if (!isReload) return;
+
+    try { localStorage.removeItem(CART_KEY); } catch {}
+    try { localStorage.removeItem(NOTE_KEY); } catch {}
+    try { localStorage.removeItem(CART_ACTIVITY_KEY); } catch {}
+    // ملاحظة: بيانات العميل مش بنمسحها هنا (عندك TTL 5 دقائق + مسح بعد الإتمام)
+  } catch {}
+})();
 
 const cart = {
   items: loadCart(),
@@ -44,6 +65,9 @@ init().catch(console.error);
    ========================= */
 async function init() {
   const loading = $("#loading");
+
+  // ✅ TTL check عند بداية الصفحة (لو انتهت الـ 3 دقائق)
+  checkCartTTLAndMaybeClear({ notify: false });
 
   const res = await fetch("data.json", { cache: "no-store" });
   if (!res.ok) throw new Error("Failed to load data.json");
@@ -60,6 +84,9 @@ async function init() {
   setupRevealAnimations();
   setupScrollSpy();
   setupBackToTop();
+
+  // ✅ جدولة مسح السلة لو انتهت المدة أثناء بقاء الصفحة مفتوحة
+  scheduleCartExpiryCheck();
 
   requestAnimationFrame(() => loading?.classList.add("hidden"));
 }
@@ -328,6 +355,9 @@ function setupBackToTop() {
    CART
    =========================================================== */
 function loadCart() {
+  // ✅ TTL check قبل القراءة
+  checkCartTTLAndMaybeClear({ notify: false });
+
   try {
     const raw = localStorage.getItem(CART_KEY);
     return raw ? JSON.parse(raw) : {};
@@ -352,6 +382,53 @@ function loadNote() {
 function saveNote(v) {
   try {
     localStorage.setItem(NOTE_KEY, v || "");
+  } catch {}
+}
+
+/* ---------- Cart TTL helpers ---------- */
+function clearCartStorage({ notify = false } = {}) {
+  try { localStorage.removeItem(CART_KEY); } catch {}
+  try { localStorage.removeItem(NOTE_KEY); } catch {}
+  try { localStorage.removeItem(CART_ACTIVITY_KEY); } catch {}
+  cart.items = {};
+  updateCartUI();
+  if (notify) toast("تم مسح السلة لانتهاء المدة ⏳");
+}
+
+function updateCartActivity() {
+  try {
+    localStorage.setItem(CART_ACTIVITY_KEY, String(Date.now()));
+  } catch {}
+  scheduleCartExpiryCheck();
+}
+
+function checkCartTTLAndMaybeClear({ notify = true } = {}) {
+  try {
+    const last = Number(localStorage.getItem(CART_ACTIVITY_KEY) || 0);
+    if (!last) return;
+
+    if (Date.now() - last > CART_TTL_MS) {
+      clearCartStorage({ notify });
+    }
+  } catch {}
+}
+
+let cartExpireTimer = null;
+function scheduleCartExpiryCheck() {
+  clearTimeout(cartExpireTimer);
+  try {
+    const last = Number(localStorage.getItem(CART_ACTIVITY_KEY) || 0);
+    if (!last) return;
+
+    const remaining = CART_TTL_MS - (Date.now() - last);
+    if (remaining <= 0) {
+      clearCartStorage({ notify: true });
+      return;
+    }
+
+    cartExpireTimer = setTimeout(() => {
+      checkCartTTLAndMaybeClear({ notify: true });
+    }, remaining + 50);
   } catch {}
 }
 
@@ -415,7 +492,6 @@ function applyCustomerToInputs() {
   addrEl.value = data.address || "";
 }
 
-/* (اختياري) جدولة مسح تلقائي لو انتهت 5 دقائق أثناء فتح الصفحة */
 let customerExpireTimer = null;
 function scheduleCustomerExpiryCheck() {
   clearTimeout(customerExpireTimer);
@@ -449,18 +525,22 @@ function setupCartUI() {
 
   if (continueBtn) {
     continueBtn.addEventListener("click", () => {
+      updateCartActivity();
       closeCart();
     });
   }
 
   noteEl.value = loadNote();
-  noteEl.addEventListener("input", () => saveNote(noteEl.value));
+  noteEl.addEventListener("input", () => {
+    saveNote(noteEl.value);
+    updateCartActivity();
+  });
 
   // ✅ حمّل بيانات العميل لو لسه ضمن 5 دقائق
   applyCustomerToInputs();
   scheduleCustomerExpiryCheck();
 
-  // ✅ احفظ بيانات العميل عند أي تعديل (وتتجدد 5 دقائق)
+  // ✅ احفظ بيانات العميل عند أي تعديل
   const nameEl = document.getElementById("custName");
   const phoneEl = document.getElementById("custPhone");
   const addrEl = document.getElementById("custAddress");
@@ -472,6 +552,7 @@ function setupCartUI() {
       address: (addrEl?.value || "").trim(),
     });
     scheduleCustomerExpiryCheck();
+    updateCartActivity(); // نشاط
   };
 
   nameEl?.addEventListener("input", onCustInput);
@@ -479,9 +560,10 @@ function setupCartUI() {
   addrEl?.addEventListener("input", onCustInput);
 
   cartFab.addEventListener("click", () => {
-    // عند فتح السلة: طبّق TTL وامسح لو انتهت
+    checkCartTTLAndMaybeClear({ notify: true });
     applyCustomerToInputs();
     scheduleCustomerExpiryCheck();
+    updateCartActivity();
     openCart();
   });
 
@@ -491,11 +573,13 @@ function setupCartUI() {
   clearBtn.addEventListener("click", () => {
     cart.items = {};
     saveCart();
+    updateCartActivity();
     toast("تم تفريغ السلة ✅");
   });
 
-  // ✅ لا تفتح أي تبويب قبل التحقق من البيانات => مفيش blank
   checkoutBtn.addEventListener("click", () => {
+    checkCartTTLAndMaybeClear({ notify: true });
+
     const waUrl = buildWhatsAppCartUrl();
     if (!waUrl) return toast("أضف منتجات للسلة أولاً ❗");
 
@@ -511,16 +595,16 @@ function setupCartUI() {
 
     const payload = buildOrderPayload({ customerName, customerPhone, address, note });
 
-    // محاولة حفظ للشيت بدون تعطيل واتساب
     const sent = sendOrderToSheetFireAndForget(payload);
     if (sent) toast("جارٍ حفظ البيانات… ✅");
 
-    // ✅ امسح بيانات العميل بعد الإتمام (أفضل لتجنب لخبطة الطلبات)
+    // ✅ امسح بيانات العميل بعد الإتمام
     clearCustomer();
     applyCustomerToInputs();
     scheduleCustomerExpiryCheck();
 
-    // افتح واتساب مباشرة
+    updateCartActivity();
+
     window.open(waUrl, "_blank", "noopener");
   });
 
@@ -544,6 +628,8 @@ function closeCart() {
 }
 
 function addToCart(sectionTitle, item) {
+  checkCartTTLAndMaybeClear({ notify: true });
+
   const id = stableItemId(sectionTitle, item);
   const priceText = String(item.price || "").trim();
   const priceNum = parsePriceNumber(priceText);
@@ -563,15 +649,19 @@ function addToCart(sectionTitle, item) {
   }
 
   saveCart();
+  updateCartActivity();
   toast("تمت الإضافة للسلة ✅");
 }
 
 function changeQty(id, delta) {
+  checkCartTTLAndMaybeClear({ notify: true });
+
   const it = cart.items[id];
   if (!it) return;
   it.qty += delta;
   if (it.qty <= 0) delete cart.items[id];
   saveCart();
+  updateCartActivity();
 }
 
 function updateCartUI() {
@@ -692,7 +782,6 @@ function sendOrderToSheetFireAndForget(payload) {
     if (!SHEET_WEBAPP_URL || !SHEET_WEBAPP_URL.includes("/exec")) return false;
     const body = JSON.stringify(payload);
 
-    // 1) Beacon
     try {
       if (navigator.sendBeacon) {
         const ok = navigator.sendBeacon(
@@ -703,7 +792,6 @@ function sendOrderToSheetFireAndForget(payload) {
       }
     } catch {}
 
-    // 2) fetch no-cors (we won't read response)
     try {
       fetch(SHEET_WEBAPP_URL, {
         method: "POST",
