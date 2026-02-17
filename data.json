@@ -1,0 +1,231 @@
+{
+  "restaurantName": "Friedo ",
+  "description": "طعم مايتنسيش ✨    ",
+  "logo": "logo.png",
+  "themeColor": "#ff2b2b",
+  "phone": "201283072341",
+  "sections": [
+    {
+      "title": "الوجبات",
+      "items": [
+        {
+          "name": "فرايدو ميل",
+          "description": "نصف فرخة بروستد + بطاطس + 2 خبز + كول سلو + صوص",
+          "price": "199 ج",
+          "image": "assets/images/friedomeal.jpg"
+        },
+        {
+          "name": "فرايدو سناك",
+          "description": "ربع فرخة بروستد + بطاطس + خبز + كول سلو + صوص",
+          "price": "116 ج",
+          "image": "assets/images/snk.jpg"
+        },
+        {
+          "name": "فرايدو فريندز",
+          "description": "فرخة كاملة بروستد + بطاطس + 4 خبز + كول سلو",
+          "price": "397 ج",
+          "image": "assets/images/fullchk.jpg" 
+        },
+        {
+          "name": "ميكس ميل",
+          "description": "نصف فرخة بروستد + 2 استريبس + بطاطس + خبز",
+          "price": "273 ج",
+          "image": "assets/images/mix.jpg"
+        },
+        {
+          "name": "فرايدو كيدز ميل",
+          "description": "2 استريبس + بطاطس + عصير",
+          "price": "112 ج",
+          "image": "assets/images/hpy.jpg"
+        },
+        {
+          "name": "فرايدو تشيكن فرايز",
+          "description": "بطاطس مغطاة بقطع الدجاج المقرمش والصوص",
+          "price": "104 ج",
+          "image": "assets/images/chkf.jpg"
+        }
+      ]
+    },
+    {
+      "title": "وجبات الاستربيس",
+      "items": [
+        {
+          "name": "استريبس 3 قطع",
+          "description": "3 قطع دجاج استريبس + صوص",
+          "price": "116 ج",
+          "image": "assets/images/strp.jpg"
+        },
+        {
+          "name": "استريبس 5 قطع",
+          "description": "5 قطع دجاج استريبس + صوص",
+          "price": "199 ج",
+          "image": "assets/images/5strp.jpg"
+        }
+      ]
+    },
+    {
+      "title": "Light Meals",
+      "items": [
+        {
+          "name": "فتة فرايدو",
+          "description": "أرز بسمتي + قطع دجاج + صوصات",
+          "price": "125 ج",
+          "image": "assets/images/fth.jpg"
+        },
+        {
+          "name": "فتة برو ماكس",
+          "description": "أرز بسمتي + قطع دجاج + صوصات",
+          "price": "160 ج",
+          "image": "assets/images/fthpromax.jpg"
+        },
+        {
+          "name": "Pop Friedo",
+          "description": "مكعبات دجاج مقلي",
+          "price": "99 ج",
+          "image": "assets/images/pop.jpg"
+        }
+      ]
+    },
+    {
+      "title": " مقبلات",
+      "items": [
+        {
+          "name": "بطاطس صغير",
+          "description": "مقرمشة ومتبلة",
+          "price": "25 ج",
+          "image": "assets/images/fries.png"
+        },
+        {
+          "name": "بطاطس كبير",
+          "description": "بطاطس حجم كبير",
+          "price": "40 ج",
+          "image": "assets/images/fries.png"
+        },
+        {
+          "name": "Cheese Fries",
+          "description": "بطاطس بصوص الجبنة",
+          "price": "55 ج",
+          "image": "assets/images/chesefries.png"
+        },
+        {
+          "name": "Mozzarella Sticks",
+          "description": "4 قطع",
+          "price": "62 ج",
+          "image": "assets/images/stks.png"
+        },
+        {
+          "name": "Onion Rings",
+          "description": "5 قطع",
+          "price": "58 ج",
+          "image": "assets/images/onion.png"
+        }
+      ]
+    },
+    {
+      "title": "ساندوتشات فرايدو",
+      "items": [
+        {
+          "name": "راوند كلاسيك",
+          "description": "صوص التيكساس + قطع دجاج + خس + شيدر",
+          "price": "119 ج",
+          "image": "assets/images/rnd.jpg"
+        },
+        {
+          "name": "راوند دبل",
+          "description": "نسخة أكبر بقطع دجاج إضافية وصوص مميز",
+          "price": "153 ج",
+          "image": "assets/images/rnd1.jpg"
+        },
+        {
+          "name": "راوند تربل",
+          "description": "أكبر حجم لعشاق الدجاج المقرمش",
+          "price": "180 ج",
+          "image": "assets/images/rnd3.jpg"
+        },
+        {
+          "name": "فرايدو كرانشي (لونج)",
+          "description": "صوص تيكساس + قطع دجاج + رومي مدخن",
+          "price": "147 ج",
+          "image": "assets/images/lng1.jpg"
+        },
+        {
+          "name": "بيج فرايدو (لونج)",
+          "description": "اختيارك من صوص التيكساس أو الرانش + دجاج + رومي مدخن + موتزاريلا ستيكس او حلقات البصل",
+          "price": "147 ج",
+          "image": "assets/images/lng2.png"
+        }
+      ]
+    },
+    {
+      "title": "إضافات جانبية",
+      "items": [
+        {
+          "name": "Rice",
+          "description": " أرز حجم عادي ",
+          "price": "30 ج",
+          "image": "assets/images/rice.png"
+        },
+        {
+          "name": "Rice Large",
+          "description": "أرز حجم كبير",
+          "price": "40 ج",
+          "image": "assets/images/rice.png"
+        },
+        {
+          "name": "Any Sauce",
+          "description": "اي نوع صوص إضافي",
+          "price": "35 ج",
+          "image": "assets/images/suae.png"
+        },
+        {
+          "name": "4 Bread",
+          "description": "4 قطع خبز",
+          "price": "12 ج",
+          "image": "assets/images/bread.png"
+        },
+        {
+          "name": "Cheese Sauce",
+          "description": "صوص جبنة",
+          "price": "40 ج",
+          "image": "assets/images/cheese.png"
+        },
+        {
+          "name": "Strips",
+          "description": "قطعة استريبس إضافية",
+          "price": "32 ج",
+          "image": "assets/images/strips.png"
+        },
+        {
+          "name": "Jalapeno",
+          "description": "شرائح هالبينو",
+          "price": "25 ج",
+          "image": "assets/images/jlp.png"
+        },
+        {
+          "name": "Turkey",
+          "description": "رومي مدخن",
+          "price": "25 ج",
+          "image": "assets/images/trk.png"
+        },
+        {
+          "name": "Combo",
+          "description": "إضافة كومبو",
+          "price": "45 ج",
+          "image": "assets/images/cmb.png"
+        },
+        {
+          "name": "Water",
+          "description": "مياه معدنية",
+          "price": "11 ج",
+          "image": "assets/images/wtr.png"
+        },
+        {
+          "name": "Soft Drink",
+          "description": "مشروب غازي",
+          "price": "21 ج",
+          "image": "assets/images/soda.png"
+        }
+      ]
+    }
+  ]
+}
