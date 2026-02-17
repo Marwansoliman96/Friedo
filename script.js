@@ -8,6 +8,7 @@
    - CART: add/remove/qty + localStorage + WhatsApp checkout
    - Back To Top button
    - (Optional) Save order to Google Sheet (fire-and-forget)
+   - Customer data TTL (5 minutes)
    ========================= */
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -23,6 +24,10 @@ const state = {
 /* ---------- Storage ---------- */
 const CART_KEY = "menu_cart_v1";
 const NOTE_KEY = "menu_cart_note_v1";
+
+/* ✅ بيانات العميل (5 دقائق فقط) */
+const CUSTOMER_KEY = "menu_customer_v1";
+const CUSTOMER_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 /* ✅ لازم يكون /exec (مش /exe) */
 const SHEET_WEBAPP_URL =
@@ -350,6 +355,86 @@ function saveNote(v) {
   } catch {}
 }
 
+/* ===========================================================
+   Customer Data TTL (5 minutes)
+   =========================================================== */
+function loadCustomer() {
+  try {
+    const raw = localStorage.getItem(CUSTOMER_KEY);
+    if (!raw) return null;
+
+    const obj = JSON.parse(raw);
+    if (!obj || typeof obj !== "object") return null;
+
+    const savedAt = Number(obj.savedAt || 0);
+    if (!savedAt || Date.now() - savedAt > CUSTOMER_TTL_MS) {
+      localStorage.removeItem(CUSTOMER_KEY);
+      return null;
+    }
+    return obj;
+  } catch {
+    return null;
+  }
+}
+
+function saveCustomer(partial) {
+  try {
+    const prev = loadCustomer() || {};
+    const next = {
+      name: typeof partial.name === "string" ? partial.name : (prev.name || ""),
+      phone: typeof partial.phone === "string" ? partial.phone : (prev.phone || ""),
+      address: typeof partial.address === "string" ? partial.address : (prev.address || ""),
+      savedAt: Date.now(), // ✅ بيجدد الـ 5 دقائق مع أي تعديل
+    };
+    localStorage.setItem(CUSTOMER_KEY, JSON.stringify(next));
+  } catch {}
+}
+
+function clearCustomer() {
+  try {
+    localStorage.removeItem(CUSTOMER_KEY);
+  } catch {}
+}
+
+function applyCustomerToInputs() {
+  const nameEl = document.getElementById("custName");
+  const phoneEl = document.getElementById("custPhone");
+  const addrEl = document.getElementById("custAddress");
+  if (!nameEl || !phoneEl || !addrEl) return;
+
+  const data = loadCustomer();
+  if (!data) {
+    nameEl.value = "";
+    phoneEl.value = "";
+    addrEl.value = "";
+    return;
+  }
+
+  nameEl.value = data.name || "";
+  phoneEl.value = data.phone || "";
+  addrEl.value = data.address || "";
+}
+
+/* (اختياري) جدولة مسح تلقائي لو انتهت 5 دقائق أثناء فتح الصفحة */
+let customerExpireTimer = null;
+function scheduleCustomerExpiryCheck() {
+  clearTimeout(customerExpireTimer);
+  const data = loadCustomer();
+  if (!data?.savedAt) return;
+
+  const remaining = CUSTOMER_TTL_MS - (Date.now() - Number(data.savedAt));
+  if (remaining <= 0) {
+    clearCustomer();
+    applyCustomerToInputs();
+    return;
+  }
+
+  customerExpireTimer = setTimeout(() => {
+    clearCustomer();
+    applyCustomerToInputs();
+  }, remaining + 50);
+}
+
 function setupCartUI() {
   const cartFab = $("#cartFab");
   const overlay = $("#cartOverlay");
@@ -371,7 +456,35 @@ function setupCartUI() {
   noteEl.value = loadNote();
   noteEl.addEventListener("input", () => saveNote(noteEl.value));
 
-  cartFab.addEventListener("click", openCart);
+  // ✅ حمّل بيانات العميل لو لسه ضمن 5 دقائق
+  applyCustomerToInputs();
+  scheduleCustomerExpiryCheck();
+
+  // ✅ احفظ بيانات العميل عند أي تعديل (وتتجدد 5 دقائق)
+  const nameEl = document.getElementById("custName");
+  const phoneEl = document.getElementById("custPhone");
+  const addrEl = document.getElementById("custAddress");
+
+  const onCustInput = () => {
+    saveCustomer({
+      name: (nameEl?.value || "").trim(),
+      phone: (phoneEl?.value || "").trim(),
+      address: (addrEl?.value || "").trim(),
+    });
+    scheduleCustomerExpiryCheck();
+  };
+
+  nameEl?.addEventListener("input", onCustInput);
+  phoneEl?.addEventListener("input", onCustInput);
+  addrEl?.addEventListener("input", onCustInput);
+
+  cartFab.addEventListener("click", () => {
+    // عند فتح السلة: طبّق TTL وامسح لو انتهت
+    applyCustomerToInputs();
+    scheduleCustomerExpiryCheck();
+    openCart();
+  });
+
   overlay.addEventListener("click", closeCart);
   closeBtn.addEventListener("click", closeCart);
 
@@ -401,6 +514,11 @@ function setupCartUI() {
     // محاولة حفظ للشيت بدون تعطيل واتساب
     const sent = sendOrderToSheetFireAndForget(payload);
     if (sent) toast("جارٍ حفظ البيانات… ✅");
+
+    // ✅ امسح بيانات العميل بعد الإتمام (أفضل لتجنب لخبطة الطلبات)
+    clearCustomer();
+    applyCustomerToInputs();
+    scheduleCustomerExpiryCheck();
 
     // افتح واتساب مباشرة
     window.open(waUrl, "_blank", "noopener");
