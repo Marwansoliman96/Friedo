@@ -219,7 +219,8 @@ function buildMenu(data) {
       card.innerHTML = `
         <div class="card-media">
           ${badgeText ? `<div class="badge">${badgeText}</div>` : ""}
-          <img src="${escapeAttr(imgSrc)}" alt="${safeName}" loading="lazy" />
+          <img src="${escapeAttr(normalizeImgSrc(imgSrc))}" alt="${safeName}" loading="eager" decoding="async" />
+
         </div>
         <div class="card-body">
           <h3 class="card-title">${safeName}</h3>
@@ -697,7 +698,8 @@ function updateCartUI() {
     row.className = "cart-row";
     row.innerHTML = `
       <div class="cart-thumb">
-        <img src="${escapeAttr(it.image)}" alt="${escapeHtml(it.name)}" loading="lazy" />
+        <img src="${escapeAttr(normalizeImgSrc(it.image))}" alt="${escapeHtml(it.name)}" loading="eager" decoding="async" />
+
       </div>
       <div class="cart-info">
         <p class="cart-name">${escapeHtml(it.name)}</p>
@@ -866,6 +868,12 @@ function formatNumber(n) {
 /* =========================
    Utilities
    ========================= */
+   function normalizeImgSrc(src) {
+  const s = String(src || "").trim();
+  if (!s) return "";
+  if (/^https?:\/\//i.test(s) || s.startsWith("data:")) return s;
+  return encodeURI(s);
+}
 function slugify(str) {
   return (
     String(str || "")
@@ -899,6 +907,14 @@ function getPx(varName) {
   const v = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
   return Number(String(v).replace("px", "")) || 0;
 }
+
+function normalizeImgSrc(src) {
+  const s = String(src || "").trim();
+  if (!s) return "";
+  if (/^https?:\/\//i.test(s) || s.startsWith("data:")) return s;
+  return encodeURI(s);
+}
+
 
 /* Toast */
 let toastTimer = null;
