@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#ff2b2b" />
     <title>Menu</title>
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="style.css?v=3" />
   </head>
 
   <body>
@@ -79,15 +79,33 @@
       <div id="cartItems" class="cart-items"></div>
 
       <div class="cart-customer">
-  <label for="custName">الاسم</label>
-  <input id="custName" type="text" placeholder="اكتب اسمك" autocomplete="name" />
+        <label class="field-label">طريقة الاستلام</label>
+        <div class="order-type-toggle">
+          <label class="toggle-option active" id="lblDelivery">
+            <input type="radio" name="orderType" id="orderTypeDelivery" value="delivery" checked />
+            <span>🛵 توصيل (دليفري)</span>
+          </label>
+          <label class="toggle-option" id="lblPickup">
+            <input type="radio" name="orderType" id="orderTypePickup" value="pickup" />
+            <span>🏪 استلام من الفرع</span>
+          </label>
+        </div>
 
-  <label for="custPhone">رقم الموبايل</label>
-  <input id="custPhone" type="tel" placeholder="مثال: 01xxxxxxxxx" autocomplete="tel" />
+        <div class="cart-field">
+          <label for="custName">الاسم</label>
+          <input id="custName" type="text" placeholder="اكتب اسمك" autocomplete="name" />
+        </div>
 
-  <label for="custAddress">العنوان (اختياري)</label>
-  <input id="custAddress" type="text" placeholder="المنطقة / الشارع" autocomplete="street-address" />
-</div>
+        <div class="cart-field">
+          <label for="custPhone">رقم الموبايل</label>
+          <input id="custPhone" type="tel" placeholder="مثال: 01xxxxxxxxx" autocomplete="tel" />
+        </div>
+
+        <div id="addressWrapper" class="cart-field">
+          <label for="custAddress">العنوان (مطلوب)</label>
+          <input id="custAddress" type="text" placeholder="المنطقة / الشارع" autocomplete="street-address" />
+        </div>
+      </div>
 
       <div class="cart-note">
         
@@ -117,6 +135,6 @@
       </div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="script.js?v=3"></script>
   </body>
 </html>

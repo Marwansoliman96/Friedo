@@ -462,6 +462,7 @@ function saveCustomer(partial) {
       name: typeof partial.name === "string" ? partial.name : (prev.name || ""),
       phone: typeof partial.phone === "string" ? partial.phone : (prev.phone || ""),
       address: typeof partial.address === "string" ? partial.address : (prev.address || ""),
+      orderType: typeof partial.orderType === "string" ? partial.orderType : (prev.orderType || "delivery"),
       savedAt: Date.now(), // ✅ بيجدد الـ 5 دقائق مع أي تعديل
     };
     localStorage.setItem(CUSTOMER_KEY, JSON.stringify(next));
@@ -481,16 +482,39 @@ function applyCustomerToInputs() {
   if (!nameEl || !phoneEl || !addrEl) return;
 
   const data = loadCustomer();
+  const addressWrapper = document.getElementById("addressWrapper");
+  const deliveryRadio = document.getElementById("orderTypeDelivery");
+  const pickupRadio = document.getElementById("orderTypePickup");
+  const lblDelivery = document.getElementById("lblDelivery");
+  const lblPickup = document.getElementById("lblPickup");
+
   if (!data) {
     nameEl.value = "";
     phoneEl.value = "";
     addrEl.value = "";
+    if (deliveryRadio) deliveryRadio.checked = true;
+    lblDelivery?.classList.add("active");
+    lblPickup?.classList.remove("active");
+    addressWrapper?.classList.remove("hidden");
     return;
   }
 
   nameEl.value = data.name || "";
   phoneEl.value = data.phone || "";
   addrEl.value = data.address || "";
+
+  const orderType = data.orderType || "delivery";
+  if (orderType === "pickup") {
+    if (pickupRadio) pickupRadio.checked = true;
+    lblPickup?.classList.add("active");
+    lblDelivery?.classList.remove("active");
+    addressWrapper?.classList.add("hidden");
+  } else {
+    if (deliveryRadio) deliveryRadio.checked = true;
+    lblDelivery?.classList.add("active");
+    lblPickup?.classList.remove("active");
+    addressWrapper?.classList.remove("hidden");
+  }
 }
 
 let customerExpireTimer = null;
@@ -547,10 +571,12 @@ function setupCartUI() {
   const addrEl = document.getElementById("custAddress");
 
   const onCustInput = () => {
+    const orderType = document.querySelector('input[name="orderType"]:checked')?.value || "delivery";
     saveCustomer({
       name: (nameEl?.value || "").trim(),
       phone: (phoneEl?.value || "").trim(),
       address: (addrEl?.value || "").trim(),
+      orderType: orderType,
     });
     scheduleCustomerExpiryCheck();
     updateCartActivity(); // نشاط
@@ -559,6 +585,29 @@ function setupCartUI() {
   nameEl?.addEventListener("input", onCustInput);
   phoneEl?.addEventListener("input", onCustInput);
   addrEl?.addEventListener("input", onCustInput);
+
+  const deliveryRadio = document.getElementById("orderTypeDelivery");
+  const pickupRadio = document.getElementById("orderTypePickup");
+  const lblDelivery = document.getElementById("lblDelivery");
+  const lblPickup = document.getElementById("lblPickup");
+  const addressWrapper = document.getElementById("addressWrapper");
+
+  const handleOrderTypeChange = () => {
+    const type = document.querySelector('input[name="orderType"]:checked')?.value || "delivery";
+    if (type === "pickup") {
+      lblPickup?.classList.add("active");
+      lblDelivery?.classList.remove("active");
+      addressWrapper?.classList.add("hidden");
+    } else {
+      lblDelivery?.classList.add("active");
+      lblPickup?.classList.remove("active");
+      addressWrapper?.classList.remove("hidden");
+    }
+    onCustInput();
+  };
+
+  deliveryRadio?.addEventListener("change", handleOrderTypeChange);
+  pickupRadio?.addEventListener("change", handleOrderTypeChange);
 
   cartFab.addEventListener("click", () => {
     checkCartTTLAndMaybeClear({ notify: true });
@@ -588,13 +637,28 @@ function setupCartUI() {
     const customerPhone = ($("#custPhone")?.value || "").trim();
     const address = ($("#custAddress")?.value || "").trim();
     const note = ($("#cartNote")?.value || "").trim();
+    const orderType = document.querySelector('input[name="orderType"]:checked')?.value || "delivery";
 
-    if (!customerName || !customerPhone) {
-      toast("اكتب الاسم ورقم الموبايل أولاً ❗");
-      return;
+    if (orderType === "delivery") {
+      if (!customerName || !customerPhone || !address) {
+        toast("اكتب الاسم ورقم الموبايل والعنوان أولاً ❗");
+        return;
+      }
+    } else {
+      if (!customerName || !customerPhone) {
+        toast("اكتب الاسم ورقم الموبايل أولاً ❗");
+        return;
+      }
     }
 
-    const payload = buildOrderPayload({ customerName, customerPhone, address, note });
+    const finalAddress = orderType === "delivery" ? address : "الفرع الرئيسي (استلام)";
+    const payload = buildOrderPayload({
+      customerName,
+      customerPhone,
+      address: finalAddress,
+      note,
+      orderType
+    });
 
     const sent = sendOrderToSheetFireAndForget(payload);
     if (sent) toast("جارٍ حفظ البيانات… ✅");
@@ -736,7 +800,7 @@ function updateCartUI() {
 /* =========================
    Order payload + Sheet send
    ========================= */
-function buildOrderPayload({ customerName, customerPhone, address, note }) {
+function buildOrderPayload({ customerName, customerPhone, address, note, orderType }) {
   const entries = Object.values(cart.items);
 
   const items = entries.map((it) => ({
@@ -764,6 +828,7 @@ function buildOrderPayload({ customerName, customerPhone, address, note }) {
     customerPhone,
     address,
     note,
+    orderType: orderType === "delivery" ? "دليفري" : "استلام من الفرع",
     items,
     itemsText,
     totalNumeric,
@@ -820,9 +885,29 @@ function buildWhatsAppCartUrl() {
   const entries = Object.values(cart.items);
   if (!entries.length) return "";
 
+  const customerName = ($("#custName")?.value || "").trim();
+  const customerPhone = ($("#custPhone")?.value || "").trim();
+  const address = ($("#custAddress")?.value || "").trim();
   const note = (loadNote() || "").trim();
+  const orderType = document.querySelector('input[name="orderType"]:checked')?.value || "delivery";
 
   let msg = `طلب جديد ✅\n\n`;
+  if (orderType === "delivery") {
+    msg += `🛵 نوع الطلب: دليفري (توصيل)\n`;
+  } else {
+    msg += `🏪 نوع الطلب: استلام من الفرع\n`;
+  }
+
+  if (customerName) msg += `👤 الاسم: ${customerName}\n`;
+  if (customerPhone) msg += `📞 الموبايل: ${customerPhone}\n`;
+
+  if (orderType === "delivery") {
+    if (address) msg += `📍 العنوان: ${address}\n\n`;
+  } else {
+    msg += `📍 فرع الاستلام: الفرع الرئيسي\n\n`;
+  }
+
+  msg += `الطلبات:\n`;
   for (const it of entries) {
     const linePrice = it.priceText ? ` — ${it.priceText}` : "";
     msg += `• ${it.name} × ${it.qty}${linePrice}\n`;

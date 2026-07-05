@@ -489,7 +489,7 @@ body::before{
 
 .cart-drawer{
   position:fixed;
-  inset-inline-end: 0;
+  right: 0;
   top: 0;
   height: 100%;
   width: min(420px, 92vw);
@@ -710,13 +710,19 @@ body::before{
   padding-top: 8px;
   border-top: 1px solid rgba(20,20,20,0.08);
   display: grid;
-  gap: 8px;
+  gap: 12px;
+}
+
+.cart-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .cart-customer label{
   font-size: 13px;
   color: var(--muted);
-  margin-top: 6px;
+  font-weight: 700;
 }
 
 .cart-customer input{
@@ -727,4 +733,69 @@ body::before{
   padding: 10px 12px;
   font-family: var(--font);
   outline: none;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.cart-customer input:focus {
+  border-color: var(--theme);
+  background: #fff;
+}
+
+/* Order Type Toggle Buttons */
+.order-type-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  background: rgba(20, 20, 20, 0.04);
+  padding: 4px;
+  border-radius: 14px;
+  border: 1px solid rgba(20, 20, 20, 0.06);
+}
+
+.toggle-option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 900;
+  font-size: 13px;
+  transition: all 0.2s ease;
+  color: var(--muted);
+}
+
+.toggle-option input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-option.active {
+  background: #fff;
+  color: var(--text);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.toggle-option:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+#addressWrapper {
+  transition: opacity 0.25s ease, transform 0.25s ease, max-height 0.25s ease;
+  max-height: 80px;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+#addressWrapper.hidden {
+  opacity: 0;
+  max-height: 0;
+  transform: translateY(-8px);
+  margin: 0;
+  padding: 0;
+  pointer-events: none;
+  overflow: hidden;
 }
