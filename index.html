@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#ff2b2b" />
     <title>Menu</title>
-    <link rel="stylesheet" href="style.css?v=3" />
+    <link rel="stylesheet" href="style.css?v=9" />
   </head>
 
   <body>
@@ -76,46 +76,56 @@
         <button id="cartClose" class="cart-close" type="button" aria-label="إغلاق">✕</button>
       </div>
 
-      <div id="cartItems" class="cart-items"></div>
+      <div class="cart-body-scroll">
+        <div id="cartItems" class="cart-items"></div>
 
-      <div class="cart-customer">
-        <label class="field-label">طريقة الاستلام</label>
-        <div class="order-type-toggle">
-          <label class="toggle-option active" id="lblDelivery">
-            <input type="radio" name="orderType" id="orderTypeDelivery" value="delivery" checked />
-            <span>🛵 توصيل (دليفري)</span>
-          </label>
-          <label class="toggle-option" id="lblPickup">
-            <input type="radio" name="orderType" id="orderTypePickup" value="pickup" />
-            <span>🏪 استلام من الفرع</span>
-          </label>
+        <div class="cart-customer">
+          <label class="field-label">طريقة الاستلام</label>
+          <div class="order-type-toggle">
+            <label class="toggle-option active" id="lblDelivery">
+              <input type="radio" name="orderType" id="orderTypeDelivery" value="delivery" checked />
+              <span>🛵 توصيل (دليفري)</span>
+            </label>
+            <label class="toggle-option" id="lblPickup">
+              <input type="radio" name="orderType" id="orderTypePickup" value="pickup" />
+              <span>🏪 استلام من الفرع</span>
+            </label>
+          </div>
+
+          <div class="cart-field">
+            <label for="custName">الاسم</label>
+            <input id="custName" type="text" placeholder="اكتب اسمك" autocomplete="name" />
+          </div>
+
+          <div class="cart-field">
+            <label for="custPhone">رقم الموبايل</label>
+            <input id="custPhone" type="tel" placeholder="مثال: 01xxxxxxxxx" autocomplete="tel" />
+          </div>
+
+          <div id="addressWrapper" class="cart-field">
+            <label for="custArea">منطقة التوصيل</label>
+            <select id="custArea">
+              <option value="">اختر المنطقة...</option>
+            </select>
+
+            <label for="custAddress" style="margin-top: 8px;">العنوان بالتفصيل (مطلوب)</label>
+            <input id="custAddress" type="text" placeholder="الشارع / رقم العمارة / الشقة" autocomplete="street-address" />
+          </div>
         </div>
 
-        <div class="cart-field">
-          <label for="custName">الاسم</label>
-          <input id="custName" type="text" placeholder="اكتب اسمك" autocomplete="name" />
+        <div class="cart-note">
+          <label for="cartNote">ملاحظات (اختياري)</label>
+          <textarea id="cartNote" rows="2" placeholder="مثال: بدون مخلل / صوص إضافي."></textarea>
         </div>
-
-        <div class="cart-field">
-          <label for="custPhone">رقم الموبايل</label>
-          <input id="custPhone" type="tel" placeholder="مثال: 01xxxxxxxxx" autocomplete="tel" />
-        </div>
-
-        <div id="addressWrapper" class="cart-field">
-          <label for="custAddress">العنوان (مطلوب)</label>
-          <input id="custAddress" type="text" placeholder="المنطقة / الشارع" autocomplete="street-address" />
-        </div>
-      </div>
-
-      <div class="cart-note">
-        
-        <label for="cartNote">ملاحظات (اختياري)</label>
-        <textarea id="cartNote" rows="2" placeholder="مثال: بدون مخلل / صوص إضافي."></textarea>
       </div>
 
       <div class="cart-foot">
+        <div id="cartDeliveryRow" class="cart-total" style="font-size: 13px; color: var(--muted); margin-bottom: -4px;">
+          <span>خدمة التوصيل</span>
+          <span id="cartDeliveryFee">0 ج</span>
+        </div>
         <div class="cart-total">
-          <span>الإجمالي</span>
+          <span>الإجمالي النهائي</span>
           <strong id="cartTotal">0</strong>
         </div>
 
@@ -135,6 +145,6 @@
       </div>
     </div>
 
-    <script src="script.js?v=3"></script>
+    <script src="script.js?v=9"></script>
   </body>
 </html>
