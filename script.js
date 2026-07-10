@@ -20,11 +20,11 @@ const state = {
   sectionEls: [],
   tabEls: [],
   activeId: null,
+  lastTotalCount: null,
 };
 
 /* ---------- Storage ---------- */
 const CART_KEY = "menu_cart_v1";
-const NOTE_KEY = "menu_cart_note_v1";
 
 /* ✅ بيانات العميل (5 دقائق فقط) */
 const CUSTOMER_KEY = "menu_customer_v1";
@@ -48,7 +48,6 @@ const SHEET_WEBAPP_URL =
     if (!isReload) return;
 
     try { localStorage.removeItem(CART_KEY); } catch { }
-    try { localStorage.removeItem(NOTE_KEY); } catch { }
     try { localStorage.removeItem(CART_ACTIVITY_KEY); } catch { }
     // ملاحظة: بيانات العميل مش بنمسحها هنا (عندك TTL 5 دقائق + مسح بعد الإتمام)
   } catch { }
@@ -211,6 +210,12 @@ function buildMenu(data) {
       const card = document.createElement("article");
       card.className = "card reveal";
 
+      // Store data attributes for active option checks
+      card.dataset.sectionTitle = sec.title || "قسم";
+      card.dataset.itemName = item.name || "منتج";
+      card.dataset.itemPrice = item.price || "";
+      card.dataset.itemImage = item.image || "";
+
       const safeName = escapeHtml(item.name || "منتج");
       const safeDesc = escapeHtml(item.description || "");
       const safePrice = escapeHtml(item.price || "");
@@ -258,7 +263,7 @@ function buildMenu(data) {
       card.innerHTML = `
         <div class="card-media">
           ${badgeText ? `<div class="badge">${badgeText}</div>` : ""}
-          <img src="${escapeAttr(normalizeImgSrc(imgSrc))}" alt="${safeName}" loading="eager" decoding="async" />
+          <img src="${escapeAttr(normalizeImgSrc(imgSrc))}" alt="${safeName}" loading="lazy" decoding="async" />
 
         </div>
         <div class="card-body">
@@ -267,7 +272,14 @@ function buildMenu(data) {
           ${optionsHtml}
           <div class="card-footer">
             <div class="price">${safePrice}</div>
-            <button class="add-btn" type="button">أضف للسلة</button>
+            <div class="card-action-container">
+              <button class="add-btn" type="button">أضف للسلة</button>
+              <div class="qty-controller" style="display: none;">
+                <button class="qty-btn minus" type="button">−</button>
+                <span class="qty-num">0</span>
+                <button class="qty-btn plus" type="button">+</button>
+              </div>
+            </div>
           </div>
         </div>
       `;
@@ -280,11 +292,13 @@ function buildMenu(data) {
             e.stopPropagation();
             optionBtns.forEach(b => b.classList.remove("active"));
             btn.classList.add("active");
+            updateCardStates();
           });
         });
       }
 
-      $(".add-btn", card).addEventListener("click", () => {
+      const addBtn = card.querySelector(".add-btn");
+      addBtn.addEventListener("click", () => {
         let selectedOption = "";
         if (hasOptions) {
           const activeBtn = card.querySelector(".option-btn.active");
@@ -293,7 +307,34 @@ function buildMenu(data) {
           }
         }
         addToCart(sec.title || "قسم", item, selectedOption);
-        openCart();
+      });
+
+      const getActiveItemId = () => {
+        let selectedOption = "";
+        if (hasOptions) {
+          const activeBtn = card.querySelector(".option-btn.active");
+          if (activeBtn) {
+            selectedOption = activeBtn.getAttribute("data-option");
+          }
+        }
+        const customItem = {
+          ...item,
+          name: selectedOption ? `${item.name} (${selectedOption})` : item.name
+        };
+        return stableItemId(sec.title || "قسم", customItem);
+      };
+
+      const minusBtn = card.querySelector(".qty-controller .minus");
+      const plusBtn = card.querySelector(".qty-controller .plus");
+
+      minusBtn.addEventListener("click", () => {
+        const id = getActiveItemId();
+        changeQty(id, -1);
+      });
+
+      plusBtn.addEventListener("click", () => {
+        const id = getActiveItemId();
+        changeQty(id, +1);
       });
 
       const img = $("img", card);
@@ -405,7 +446,7 @@ function setupRevealAnimations() {
         }
       });
     },
-    { threshold: 0.12, rootMargin: "0px 0px -10% 0px" }
+    { threshold: 0.01, rootMargin: "0px 0px 160px 0px" }
   );
   els.forEach((el) => io.observe(el));
 }
@@ -450,24 +491,11 @@ function saveCart() {
   updateCartUI();
 }
 
-function loadNote() {
-  try {
-    return localStorage.getItem(NOTE_KEY) || "";
-  } catch {
-    return "";
-  }
-}
-
-function saveNote(v) {
-  try {
-    localStorage.setItem(NOTE_KEY, v || "");
-  } catch { }
-}
+// loadNote and saveNote removed
 
 /* ---------- Cart TTL helpers ---------- */
 function clearCartStorage({ notify = false } = {}) {
   try { localStorage.removeItem(CART_KEY); } catch { }
-  try { localStorage.removeItem(NOTE_KEY); } catch { }
   try { localStorage.removeItem(CART_ACTIVITY_KEY); } catch { }
   cart.items = {};
   updateCartUI();
@@ -626,9 +654,8 @@ function setupCartUI() {
   const clearBtn = $("#cartClear");
   const checkoutBtn = $("#cartCheckout");
   const continueBtn = $("#cartContinue");
-  const noteEl = $("#cartNote");
 
-  if (!cartFab || !overlay || !drawer || !closeBtn || !clearBtn || !checkoutBtn || !noteEl) return;
+  if (!cartFab || !overlay || !drawer || !closeBtn || !clearBtn || !checkoutBtn) return;
 
   if (continueBtn) {
     continueBtn.addEventListener("click", () => {
@@ -636,12 +663,6 @@ function setupCartUI() {
       closeCart();
     });
   }
-
-  noteEl.value = loadNote();
-  noteEl.addEventListener("input", () => {
-    saveNote(noteEl.value);
-    updateCartActivity();
-  });
 
   // ✅ حمّل بيانات العميل لو لسه ضمن 5 دقائق
   applyCustomerToInputs();
@@ -655,9 +676,17 @@ function setupCartUI() {
 
   const onCustInput = () => {
     const orderType = document.querySelector('input[name="orderType"]:checked')?.value || "delivery";
+
+    // Convert Arabic numerals to English numerals in-place for better UX and validation compatibility
+    const rawPhone = phoneEl?.value || "";
+    const normalizedPhone = normalizeArabicNumerals(rawPhone);
+    if (phoneEl && phoneEl.value !== normalizedPhone) {
+      phoneEl.value = normalizedPhone;
+    }
+
     saveCustomer({
       name: (nameEl?.value || "").trim(),
-      phone: (phoneEl?.value || "").trim(),
+      phone: normalizedPhone.trim(),
       address: (addrEl?.value || "").trim(),
       area: (areaEl?.value || "").trim(),
       orderType: orderType,
@@ -718,89 +747,110 @@ function setupCartUI() {
   });
 
   checkoutBtn.addEventListener("click", () => {
-    checkCartTTLAndMaybeClear({ notify: true });
+    try {
+      checkCartTTLAndMaybeClear({ notify: true });
 
-    const entries = Object.values(cart.items);
-    if (!entries.length) {
-      toast("أضف منتجات للسلة أولاً ❗");
-      return;
-    }
+      const entries = Object.values(cart.items);
+      if (!entries.length) {
+        toast("أضف منتجات للسلة أولاً ❗");
+        return;
+      }
 
-    const customerName = (nameEl?.value || "").trim();
-    const customerPhone = (phoneEl?.value || "").trim();
-    const address = (addrEl?.value || "").trim();
-    const area = (areaEl?.value || "").trim();
-    const note = ($("#cartNote")?.value || "").trim();
-    const orderType = document.querySelector('input[name="orderType"]:checked')?.value || "delivery";
+      const customerName = (nameEl?.value || "").trim();
+      const customerPhone = (phoneEl?.value || "").trim();
+      const address = (addrEl?.value || "").trim();
+      const area = (areaEl?.value || "").trim();
+      const note = ($("#cartNote")?.value || "").trim();
+      const orderType = document.querySelector('input[name="orderType"]:checked')?.value || "delivery";
 
-    let hasError = false;
+      let hasError = false;
 
-    // Helper to shake an element
-    const shakeElement = (el) => {
-      if (!el) return;
-      el.classList.add("shake-input");
-      el.addEventListener("animationend", () => {
-        el.classList.remove("shake-input");
-      }, { once: true });
-    };
+      // Helper to shake an element
+      const shakeElement = (el) => {
+        if (!el) return;
+        el.classList.add("shake-input");
+        el.addEventListener("animationend", () => {
+          el.classList.remove("shake-input");
+        }, { once: true });
+      };
 
-    if (!customerName) {
-      shakeElement(nameEl);
-      hasError = true;
-    }
-
-    // Phone number validation: non-empty, and must be 11 digits starting with 010/011/012/015
-    const cleanPhone = customerPhone.replace(/\s+/g, "");
-    if (!cleanPhone || !/^(010|011|012|015)\d{8}$/.test(cleanPhone)) {
-      shakeElement(phoneEl);
-      hasError = true;
-    }
-
-    let deliveryFee = 0;
-    if (orderType === "delivery") {
-      if (!area) {
-        shakeElement(areaEl);
+      if (!customerName) {
+        shakeElement(nameEl);
         hasError = true;
       }
-      if (!address) {
-        shakeElement(addressEl);
+
+      // Phone number validation: non-empty, and must be 11 digits starting with 010/011/012/015 (Arabic numerals normalized first, country code resolved)
+      let cleanPhone = normalizeArabicNumerals(customerPhone).replace(/[\s\-\+\(\)]/g, "");
+      if (cleanPhone.startsWith("0020")) {
+        cleanPhone = cleanPhone.slice(4);
+      } else if (cleanPhone.startsWith("20")) {
+        cleanPhone = cleanPhone.slice(2);
+      }
+      if (cleanPhone.length === 10 && /^(10|11|12|15)/.test(cleanPhone)) {
+        cleanPhone = "0" + cleanPhone;
+      }
+      if (!cleanPhone || !/^(010|011|012|015)\d{8}$/.test(cleanPhone)) {
+        shakeElement(phoneEl);
         hasError = true;
       }
-      if (areaEl && areaEl.selectedIndex > 0) {
-        deliveryFee = Number(areaEl.options[areaEl.selectedIndex].dataset.fee || 0);
+
+      let deliveryFee = 0;
+      if (orderType === "delivery") {
+        if (!area) {
+          shakeElement(areaEl);
+          hasError = true;
+        }
+        if (!address) {
+          shakeElement(addrEl);
+          hasError = true;
+        }
+        if (areaEl && areaEl.selectedIndex > 0) {
+          deliveryFee = Number(areaEl.options[areaEl.selectedIndex].dataset.fee || 0);
+        }
       }
+
+      if (hasError) {
+        toast("يرجى إكمال البيانات المطلوبة بشكل صحيح ❗");
+        return;
+      }
+
+      const waUrl = buildWhatsAppCartUrl();
+      if (!waUrl) return toast("أضف منتجات للسلة أولاً ❗");
+
+      const finalAddress = orderType === "delivery" ? address : "الفرع الرئيسي (استلام)";
+      const payload = buildOrderPayload({
+        customerName,
+        customerPhone,
+        area: orderType === "delivery" ? area : "",
+        address: finalAddress,
+        deliveryFee: orderType === "delivery" ? deliveryFee : 0,
+        note,
+        orderType
+      });
+
+      const sent = sendOrderToSheetFireAndForget(payload);
+      if (sent) toast("جارٍ ارسال البيانات… ✅");
+
+      // ✅ امسح بيانات العميل بعد الإتمام
+      clearCustomer();
+      applyCustomerToInputs();
+      scheduleCustomerExpiryCheck();
+
+      updateCartActivity();
+
+      // Check if mobile device to bypass popup blockers and avoid blank tabs (handles desktop site mode on mobile too)
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+        || (navigator.maxTouchPoints > 0 && window.innerWidth <= 1024);
+      if (isMobile) {
+        // Use native protocol link to force launching the native WhatsApp app directly on mobile
+        const nativeWaUrl = waUrl.replace("https://wa.me/", "whatsapp://send?phone=").replace("?text=", "&text=");
+        window.location.href = nativeWaUrl;
+      } else {
+        window.open(waUrl, "_blank", "noopener");
+      }
+    } catch (err) {
+      alert("حدث خطأ أثناء إتمام الطلب:\n" + err.message + "\n" + err.stack);
     }
-
-    if (hasError) {
-      toast("يرجى إكمال البيانات المطلوبة بشكل صحيح ❗");
-      return;
-    }
-
-    const waUrl = buildWhatsAppCartUrl();
-    if (!waUrl) return toast("أضف منتجات للسلة أولاً ❗");
-
-    const finalAddress = orderType === "delivery" ? address : "الفرع الرئيسي (استلام)";
-    const payload = buildOrderPayload({
-      customerName,
-      customerPhone,
-      area: orderType === "delivery" ? area : "",
-      address: finalAddress,
-      deliveryFee: orderType === "delivery" ? deliveryFee : 0,
-      note,
-      orderType
-    });
-
-    const sent = sendOrderToSheetFireAndForget(payload);
-    if (sent) toast("جارٍ حفظ البيانات… ✅");
-
-    // ✅ امسح بيانات العميل بعد الإتمام
-    clearCustomer();
-    applyCustomerToInputs();
-    scheduleCustomerExpiryCheck();
-
-    updateCartActivity();
-
-    window.open(waUrl, "_blank", "noopener");
   });
 
   window.addEventListener("keydown", (e) => {
@@ -843,6 +893,7 @@ function addToCart(sectionTitle, item, selectedOption = "") {
       priceNum,
       image: item.image || "",
       qty: 1,
+      note: ""
     };
   } else {
     cart.items[id].qty += 1;
@@ -864,6 +915,48 @@ function changeQty(id, delta) {
   updateCartActivity();
 }
 
+function updateCardStates() {
+  const cards = document.querySelectorAll(".card");
+  cards.forEach(card => {
+    const sectionTitle = card.dataset.sectionTitle;
+    const itemName = card.dataset.itemName;
+    const itemPrice = card.dataset.itemPrice;
+    const itemImage = card.dataset.itemImage;
+
+    const activeOptionBtn = card.querySelector(".option-btn.active");
+    const selectedOption = activeOptionBtn ? activeOptionBtn.getAttribute("data-option") : "";
+
+    const item = {
+      name: itemName,
+      price: itemPrice,
+      image: itemImage
+    };
+
+    const customItem = {
+      ...item,
+      name: selectedOption ? `${item.name} (${selectedOption})` : item.name
+    };
+
+    const id = stableItemId(sectionTitle, customItem);
+    const cartItem = cart.items[id];
+
+    const addBtn = card.querySelector(".add-btn");
+    const qtyController = card.querySelector(".qty-controller");
+    const qtyNum = card.querySelector(".qty-controller .qty-num");
+
+    if (addBtn && qtyController && qtyNum) {
+      if (cartItem && cartItem.qty > 0) {
+        addBtn.style.display = "none";
+        qtyController.style.display = "inline-flex";
+        qtyNum.textContent = cartItem.qty;
+      } else {
+        addBtn.style.display = "block";
+        qtyController.style.display = "none";
+      }
+    }
+  });
+}
+
 function updateCartUI() {
   const countEl = $("#cartCount");
   const subEl = $("#cartSub");
@@ -871,21 +964,51 @@ function updateCartUI() {
   const totalEl = $("#cartTotal");
   if (!countEl || !subEl || !itemsRoot || !totalEl) return;
 
+  // Sync product cards with cart
+  updateCardStates();
+
   const entries = Object.values(cart.items);
   const totalCount = entries.reduce((a, it) => a + it.qty, 0);
 
-  countEl.textContent = String(totalCount);
+  const fab = $("#cartFab");
+  if (totalCount > 0) {
+    fab?.classList.remove("hidden");
+    countEl.textContent = String(totalCount);
+  } else {
+    fab?.classList.add("hidden");
+  }
+
+  // Trigger pulse animation when cart total increases or appears for the first time
+  if (state.lastTotalCount !== null) {
+    if ((state.lastTotalCount === 0 && totalCount > 0) || totalCount > state.lastTotalCount) {
+      triggerFabPulse();
+    }
+  }
+  state.lastTotalCount = totalCount;
+
   subEl.textContent = `${totalCount} عنصر`;
 
   const deliveryRow = document.getElementById("cartDeliveryRow");
   const deliveryFeeEl = document.getElementById("cartDeliveryFee");
 
+  const checkoutBtn = $("#cartCheckout");
   if (!entries.length) {
     itemsRoot.innerHTML = `<div class="cart-empty">السلة فارغة… ابدأ بإضافة منتجات 🍗</div>`;
     totalEl.textContent = "0";
     if (deliveryRow) deliveryRow.style.display = "none";
     if (deliveryFeeEl) deliveryFeeEl.textContent = "0 ج";
+    if (checkoutBtn) {
+      checkoutBtn.disabled = true;
+      checkoutBtn.style.opacity = "0.5";
+      checkoutBtn.style.pointerEvents = "none";
+    }
     return;
+  }
+
+  if (checkoutBtn) {
+    checkoutBtn.disabled = false;
+    checkoutBtn.style.opacity = "1";
+    checkoutBtn.style.pointerEvents = "auto";
   }
 
   itemsRoot.innerHTML = "";
@@ -908,6 +1031,7 @@ function updateCartUI() {
       <div class="cart-info">
         <p class="cart-name">${escapeHtml(it.name)}</p>
         <p class="cart-price">${escapeHtml(it.priceText || "")}</p>
+        <input type="text" class="cart-item-note-input" placeholder="ملاحظة خاصة بالطلب..." value="${escapeAttr(it.note || '')}" />
       </div>
       <div class="cart-qty">
         <button class="qty-btn" type="button" data-act="plus">+</button>
@@ -915,6 +1039,10 @@ function updateCartUI() {
         <button class="qty-btn" type="button" data-act="minus">−</button>
       </div>
     `;
+
+    row.querySelector('.cart-item-note-input').addEventListener("input", (e) => {
+      updateItemNote(it.id, e.target.value);
+    });
 
     row.querySelector('[data-act="plus"]').addEventListener("click", () => changeQty(it.id, +1));
     row.querySelector('[data-act="minus"]').addEventListener("click", () => changeQty(it.id, -1));
@@ -952,6 +1080,29 @@ function updateCartUI() {
   totalEl.textContent = hasNumeric ? formatNumber(grandTotal) : "—";
 }
 
+let fabPulseTimeout = null;
+function triggerFabPulse() {
+  const fab = $("#cartFab");
+  if (!fab) return;
+  clearTimeout(fabPulseTimeout);
+  fab.classList.remove("pulse-fab");
+  void fab.offsetWidth; // Force reflow
+  fab.classList.add("pulse-fab");
+  fabPulseTimeout = setTimeout(() => {
+    fab.classList.remove("pulse-fab");
+  }, 400);
+}
+
+function updateItemNote(id, noteText) {
+  if (cart.items[id]) {
+    cart.items[id].note = noteText;
+    try {
+      localStorage.setItem(CART_KEY, JSON.stringify(cart.items));
+      localStorage.setItem(CART_ACTIVITY_KEY, String(Date.now()));
+    } catch (e) { }
+  }
+}
+
 /* =========================
    Order payload + Sheet send
    ========================= */
@@ -964,12 +1115,14 @@ function buildOrderPayload({ customerName, customerPhone, area, address, deliver
     priceText: it.priceText || "",
     priceNum: Number.isFinite(it.priceNum) ? it.priceNum : null,
     section: it.section || "",
+    note: it.note || "",
   }));
 
   const itemsText = entries
     .map((it) => {
       const p = it.priceText ? ` — ${it.priceText}` : "";
-      return `${it.name} × ${it.qty}${p}`;
+      const noteText = it.note && it.note.trim() ? ` [ملاحظة: ${it.note.trim()}]` : "";
+      return `${it.name} × ${it.qty}${p}${noteText}`;
     })
     .join("\n");
 
@@ -1023,6 +1176,7 @@ function sendOrderToSheetFireAndForget(payload) {
         mode: "no-cors",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body,
+        keepalive: true, // Keep request alive even when page navigates to WhatsApp
       });
       return true;
     } catch { }
@@ -1048,7 +1202,6 @@ function buildWhatsAppCartUrl() {
   const customerName = ($("#custName")?.value || "").trim();
   const customerPhone = ($("#custPhone")?.value || "").trim();
   const address = ($("#custAddress")?.value || "").trim();
-  const note = (loadNote() || "").trim();
   const orderType = document.querySelector('input[name="orderType"]:checked')?.value || "delivery";
 
   let deliveryFee = 0;
@@ -1077,6 +1230,9 @@ function buildWhatsAppCartUrl() {
   for (const it of entries) {
     const linePrice = it.priceText ? ` — ${it.priceText}` : "";
     msg += `• ${it.name} × ${it.qty}${linePrice}\n`;
+    if (it.note && it.note.trim()) {
+      msg += `  (ملاحظة: ${it.note.trim()})\n`;
+    }
   }
 
   const numericTotal = entries.reduce((acc, it) => {
@@ -1093,7 +1249,6 @@ function buildWhatsAppCartUrl() {
       msg += `💰 الإجمالي النهائي: ${formatNumber(numericTotal)} ج\n`;
     }
   }
-  if (note) msg += `\nملاحظات:\n${note}\n`;
 
   msg += `\nشكراً 🙏`;
   return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
@@ -1145,21 +1300,35 @@ function slugify(str) {
   );
 }
 
+function normalizeArabicNumerals(str) {
+  return String(str || "")
+    .replace(/[٠۰]/g, "0")
+    .replace(/[١۱]/g, "1")
+    .replace(/[٢۲]/g, "2")
+    .replace(/[٣۳]/g, "3")
+    .replace(/[٤۴]/g, "4")
+    .replace(/[٥۵]/g, "5")
+    .replace(/[٦۶]/g, "6")
+    .replace(/[٧۷]/g, "7")
+    .replace(/[٨۸]/g, "8")
+    .replace(/[٩۹]/g, "9");
+}
+
 function sanitizePhone(phone) {
   return String(phone || "").replace(/[^\d]/g, "");
 }
 
 function escapeHtml(s) {
   return String(s ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 function escapeAttr(s) {
-  return escapeHtml(s).replaceAll("\n", " ").trim();
+  return escapeHtml(s).replace(/\n/g, " ").trim();
 }
 
 function getPx(varName) {
