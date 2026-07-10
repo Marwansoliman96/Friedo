@@ -1024,19 +1024,23 @@ function updateCartUI() {
     const row = document.createElement("div");
     row.className = "cart-row";
     row.innerHTML = `
-      <div class="cart-thumb">
-        <img src="${escapeAttr(normalizeImgSrc(it.image))}" alt="${escapeHtml(it.name)}" loading="eager" decoding="async" />
-
+      <div class="cart-row-main">
+        <div class="cart-thumb">
+          <img src="${escapeAttr(normalizeImgSrc(it.image))}" alt="${escapeHtml(it.name)}" loading="eager" decoding="async" />
+        </div>
+        <div class="cart-info">
+          <p class="cart-name">${escapeHtml(it.name)}</p>
+          <p class="cart-price">${escapeHtml(it.priceText || "")}</p>
+        </div>
+        <div class="cart-qty">
+          <button class="qty-btn" type="button" data-act="plus">+</button>
+          <span class="qty-num">${it.qty}</span>
+          <button class="qty-btn" type="button" data-act="minus">−</button>
+        </div>
       </div>
-      <div class="cart-info">
-        <p class="cart-name">${escapeHtml(it.name)}</p>
-        <p class="cart-price">${escapeHtml(it.priceText || "")}</p>
-        <input type="text" class="cart-item-note-input" placeholder="ملاحظة خاصة بالطلب..." value="${escapeAttr(it.note || '')}" />
-      </div>
-      <div class="cart-qty">
-        <button class="qty-btn" type="button" data-act="plus">+</button>
-        <span class="qty-num">${it.qty}</span>
-        <button class="qty-btn" type="button" data-act="minus">−</button>
+      <div class="cart-row-note">
+        <span class="note-icon">📝</span>
+        <input type="text" class="cart-item-note-input" placeholder="أضف ملاحظة خاصة (بدون بصل، صوص زيادة...)" value="${escapeAttr(it.note || '')}" />
       </div>
     `;
 
