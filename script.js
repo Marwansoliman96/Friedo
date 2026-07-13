@@ -227,10 +227,10 @@ function buildMenu(data) {
       let hasOptions = false;
       let optionList = [];
       if (secTitleClean === "الوجبات") {
-        if (itemName === "فرايدو سناك") {
+        if (itemName === "فرايدو سناك" || itemName === "فرايدو تشيكن فرايز") {
           hasOptions = true;
           optionList = ["عادي", "سبايسي"];
-        } else if (itemName === "فرايدو كيدز ميل" || itemName === "فرايدو تشيكن فرايز") {
+        } else if (itemName === "فرايدو كيدز ميل") {
           hasOptions = false;
         } else {
           hasOptions = true;
@@ -244,16 +244,40 @@ function buildMenu(data) {
       } else if (secTitleClean === "ساندوتشات فرايدو") {
         hasOptions = true;
         optionList = ["عادي", "سبايسي"];
+      } else if (secTitleClean === "Light Meals") {
+        if (itemName.includes("فتة")) {
+          hasOptions = true;
+          optionList = ["عادي", "سبايسي"];
+        }
       }
 
 
+      let hasSauces = false;
+      let sauceList = [];
+      if (secTitleClean === "Light Meals" && itemName.includes("فتة")) {
+        hasSauces = true;
+        sauceList = ["تكساس", "رانش", "باربكيو", "فاير صوص", "شيدر", "سويت شيلي"];
+      }
+
       let optionsHtml = "";
       if (hasOptions) {
-        optionsHtml = `
-          <div class="option-selector">
+        optionsHtml += `
+          <div class="option-selector spicy-selector">
             ${optionList.map((opt, oIdx) => `
               <button class="option-btn${oIdx === 0 ? " active" : ""}" type="button" data-option="${opt}">
                 ${opt}
+              </button>
+            `).join("")}
+          </div>
+        `;
+      }
+      if (hasSauces) {
+        optionsHtml += `
+          <div class="option-title" style="font-size: 11px; color: var(--muted); font-weight: 700; margin-bottom: 4px; text-align: right;">الصوص:</div>
+          <div class="option-selector sauce-selector">
+            ${sauceList.map((sauce, sIdx) => `
+              <button class="option-btn${sIdx === 0 ? " active" : ""}" type="button" data-sauce="${sauce}">
+                ${sauce}
               </button>
             `).join("")}
           </div>
@@ -285,7 +309,7 @@ function buildMenu(data) {
       `;
 
       if (hasOptions) {
-        const optionBtns = card.querySelectorAll(".option-btn");
+        const optionBtns = card.querySelectorAll(".spicy-selector .option-btn");
         optionBtns.forEach(btn => {
           btn.addEventListener("click", (e) => {
             e.preventDefault();
@@ -297,29 +321,76 @@ function buildMenu(data) {
         });
       }
 
+      if (hasSauces) {
+        const sauceBtns = card.querySelectorAll(".sauce-selector .option-btn");
+        sauceBtns.forEach(btn => {
+          btn.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            sauceBtns.forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            updateCardStates();
+          });
+        });
+      }
+
       const addBtn = card.querySelector(".add-btn");
       addBtn.addEventListener("click", () => {
         let selectedOption = "";
+        let selectedSauce = "";
         if (hasOptions) {
-          const activeBtn = card.querySelector(".option-btn.active");
+          const activeBtn = card.querySelector(".spicy-selector .option-btn.active");
           if (activeBtn) {
             selectedOption = activeBtn.getAttribute("data-option");
           }
         }
-        addToCart(sec.title || "قسم", item, selectedOption);
+        if (hasSauces) {
+          const activeSauce = card.querySelector(".sauce-selector .option-btn.active");
+          if (activeSauce) {
+            selectedSauce = activeSauce.getAttribute("data-sauce");
+          }
+        }
+
+        let combinedOption = "";
+        if (selectedOption && selectedSauce) {
+          combinedOption = `${selectedOption} + صوص ${selectedSauce}`;
+        } else if (selectedOption) {
+          combinedOption = selectedOption;
+        } else if (selectedSauce) {
+          combinedOption = `صوص ${selectedSauce}`;
+        }
+
+        addToCart(sec.title || "قسم", item, combinedOption);
       });
 
       const getActiveItemId = () => {
         let selectedOption = "";
+        let selectedSauce = "";
         if (hasOptions) {
-          const activeBtn = card.querySelector(".option-btn.active");
+          const activeBtn = card.querySelector(".spicy-selector .option-btn.active");
           if (activeBtn) {
             selectedOption = activeBtn.getAttribute("data-option");
           }
         }
+        if (hasSauces) {
+          const activeSauce = card.querySelector(".sauce-selector .option-btn.active");
+          if (activeSauce) {
+            selectedSauce = activeSauce.getAttribute("data-sauce");
+          }
+        }
+
+        let combinedOption = "";
+        if (selectedOption && selectedSauce) {
+          combinedOption = `${selectedOption} + صوص ${selectedSauce}`;
+        } else if (selectedOption) {
+          combinedOption = selectedOption;
+        } else if (selectedSauce) {
+          combinedOption = `صوص ${selectedSauce}`;
+        }
+
         const customItem = {
           ...item,
-          name: selectedOption ? `${item.name} (${selectedOption})` : item.name
+          name: combinedOption ? `${item.name} (${combinedOption})` : item.name
         };
         return stableItemId(sec.title || "قسم", customItem);
       };
@@ -923,8 +994,20 @@ function updateCardStates() {
     const itemPrice = card.dataset.itemPrice;
     const itemImage = card.dataset.itemImage;
 
-    const activeOptionBtn = card.querySelector(".option-btn.active");
-    const selectedOption = activeOptionBtn ? activeOptionBtn.getAttribute("data-option") : "";
+    const activeOptionBtn = card.querySelector(".spicy-selector .option-btn.active");
+    const selectedOption = activeOptionBtn ? (activeOptionBtn.getAttribute("data-option") || "") : "";
+
+    const activeSauceBtn = card.querySelector(".sauce-selector .option-btn.active");
+    const selectedSauce = activeSauceBtn ? (activeSauceBtn.getAttribute("data-sauce") || "") : "";
+
+    let combinedOption = "";
+    if (selectedOption && selectedSauce) {
+      combinedOption = `${selectedOption} + صوص ${selectedSauce}`;
+    } else if (selectedOption) {
+      combinedOption = selectedOption;
+    } else if (selectedSauce) {
+      combinedOption = `صوص ${selectedSauce}`;
+    }
 
     const item = {
       name: itemName,
@@ -934,7 +1017,7 @@ function updateCardStates() {
 
     const customItem = {
       ...item,
-      name: selectedOption ? `${item.name} (${selectedOption})` : item.name
+      name: combinedOption ? `${item.name} (${combinedOption})` : item.name
     };
 
     const id = stableItemId(sectionTitle, customItem);
