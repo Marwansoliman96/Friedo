@@ -1091,6 +1091,13 @@ body::before {
     box-shadow: 0 4px 12px rgba(2, 136, 209, 0.25);
   }
 
+  .option-btn[data-piece].active {
+    background: #673ab7;
+    color: #fff;
+    border-color: #673ab7;
+    box-shadow: 0 4px 12px rgba(103, 58, 183, 0.25);
+  }
+
   .option-btn:hover:not(.active) {
     background: rgba(255, 255, 255, 0.70);
     border-color: rgba(20, 20, 20, 0.15);
@@ -1167,3 +1174,91 @@ body::before {
     outline: none;
     color: var(--text);
   }
+
+  /* Options Bottom Sheet */
+  .options-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 92;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    transition: opacity 220ms ease;
+  }
+  .options-sheet {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translate(-50%, 100%);
+    width: min(500px, 100vw);
+    max-height: 85vh;
+    z-index: 95;
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top-left-radius: 28px;
+    border-top-right-radius: 28px;
+    box-shadow: 0 -16px 50px rgba(0, 0, 0, 0.18);
+    transition: transform 320ms cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    border: 1px solid rgba(20, 20, 20, 0.08);
+    box-sizing: border-box;
+  }
+  .options-sheet.open {
+    transform: translate(-50%, 0);
+  }
+  .options-close {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    border: 1px solid rgba(20, 20, 20, 0.10);
+    background: rgba(255, 255, 255, 0.70);
+    border-radius: 12px;
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+    font-weight: 900;
+    display: grid;
+    place-items: center;
+    z-index: 5;
+  }
+  .options-sheet-body {
+    flex: 1;
+    overflow-y: auto;
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    text-align: right;
+  }
+  .options-sheet-footer {
+    padding-top: 14px;
+    margin-top: 10px;
+    border-top: 1px solid rgba(20, 20, 20, 0.08);
+  }
+  .options-sheet-media {
+    width: 100%;
+    height: 180px;
+    border-radius: 20px;
+    overflow: hidden;
+    border: 1px solid rgba(20, 20, 20, 0.08);
+    background: rgba(255,255,255,0.7);
+  }
+  .options-sheet-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .options-sheet-info h3 {
+    margin: 6px 0 4px;
+    font-size: 20px;
+    font-weight: 900;
+  }
+  .options-sheet-info p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--muted);
+  }

@@ -13,7 +13,7 @@
     <meta property="og:image" content="logo.png" />
     <meta property="og:type" content="website" />
 
-    <link rel="stylesheet" href="style.css?v=12" />
+    <link rel="stylesheet" href="style.css?v=13" />
   </head>
 
   <body>
@@ -143,6 +143,19 @@
         </div>
     </aside>
 
+    <!-- Options Bottom Sheet -->
+    <div id="optionsOverlay" class="options-overlay" hidden></div>
+    <aside id="optionsSheet" class="options-sheet" aria-hidden="true">
+      <button id="optionsClose" class="options-close" type="button" aria-label="إغلاق">✕</button>
+      <div class="options-sheet-body" id="optionsSheetBody">
+        <!-- Dynamic content: image, name, description, options selectors -->
+      </div>
+      <div class="options-sheet-footer">
+        <button id="optionsAddBtn" class="btn-primary" type="button" style="width: 100%;">أضف للسلة</button>
+      </div>
+    </aside>
+
+
     <!-- Loading Skeleton -->
     <div id="loading" class="loading">
       <div class="container">
@@ -152,6 +165,6 @@
       </div>
     </div>
 
-    <script src="script.js?v=12"></script>
+    <script src="script.js?v=13"></script>
   </body>
 </html>

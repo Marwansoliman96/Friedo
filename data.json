@@ -166,13 +166,13 @@
       "items": [
         {
           "name": "فتة فرايدو",
-          "description": "أرز بسمتي + قطع دجاج + صوصات",
+          "description": "أرز بسمتي + قطع دجاج + صوص من اختيارك",
           "price": "135 ج",
           "image": "assets/images/fth.jpg"
         },
         {
           "name": "فتة برو ماكس",
-          "description": "أرز بسمتي + قطع دجاج + صوصات",
+          "description": "أرز بسمتي + قطع دجاج + صوص من اختيارك",
           "price": "170 ج",
           "image": "assets/images/fthpromax.jpg"
         },

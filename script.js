@@ -251,49 +251,44 @@ function buildMenu(data) {
         }
       }
 
+      let hasPieceOption = false;
+      if (
+        itemName === "فرايدو ميل" ||
+        itemName === "ميكس ميل" ||
+        itemName === "فرايدو سناك" ||
+        itemName === "فرايدو فريندز"
+      ) {
+        hasPieceOption = true;
+      }
 
       let hasSauces = false;
       let sauceList = [];
       if (secTitleClean === "Light Meals" && itemName.includes("فتة")) {
         hasSauces = true;
         sauceList = ["تكساس", "رانش", "باربكيو", "فاير صوص", "شيدر", "سويت شيلي"];
+      } else if (
+        itemName === "فرايدو ميل" ||
+        itemName === "ميكس ميل" ||
+        itemName === "فرايدو سناك" ||
+        itemName === "فرايدو فريندز" ||
+        secTitleClean === "وجبات الاستربيس"
+      ) {
+        hasSauces = true;
+        sauceList = ["ثومية", "سويت شيلي", "تايجر", "ساموراي/فاير صوص", "باربكيو"];
       }
 
-      let optionsHtml = "";
-      if (hasOptions) {
-        optionsHtml += `
-          <div class="option-selector spicy-selector">
-            ${optionList.map((opt, oIdx) => `
-              <button class="option-btn${oIdx === 0 ? " active" : ""}" type="button" data-option="${opt}">
-                ${opt}
-              </button>
-            `).join("")}
-          </div>
-        `;
-      }
-      if (hasSauces) {
-        optionsHtml += `
-          <div class="option-title" style="font-size: 11px; color: var(--muted); font-weight: 700; margin-bottom: 4px; text-align: right;">الصوص:</div>
-          <div class="option-selector sauce-selector">
-            ${sauceList.map((sauce, sIdx) => `
-              <button class="option-btn${sIdx === 0 ? " active" : ""}" type="button" data-sauce="${sauce}">
-                ${sauce}
-              </button>
-            `).join("")}
-          </div>
-        `;
-      }
+      const itemHasOptions = hasOptions || hasSauces || hasPieceOption;
+
+      card.dataset.hasOptions = itemHasOptions ? "true" : "false";
 
       card.innerHTML = `
         <div class="card-media">
           ${badgeText ? `<div class="badge">${badgeText}</div>` : ""}
           <img src="${escapeAttr(normalizeImgSrc(imgSrc))}" alt="${safeName}" loading="lazy" decoding="async" />
-
         </div>
         <div class="card-body">
           <h3 class="card-title">${safeName}</h3>
           <p class="card-desc">${safeDesc || " "}</p>
-          ${optionsHtml}
           <div class="card-footer">
             <div class="price">${safePrice}</div>
             <div class="card-action-container">
@@ -308,91 +303,17 @@ function buildMenu(data) {
         </div>
       `;
 
-      if (hasOptions) {
-        const optionBtns = card.querySelectorAll(".spicy-selector .option-btn");
-        optionBtns.forEach(btn => {
-          btn.addEventListener("click", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            optionBtns.forEach(b => b.classList.remove("active"));
-            btn.classList.add("active");
-            updateCardStates();
-          });
-        });
-      }
-
-      if (hasSauces) {
-        const sauceBtns = card.querySelectorAll(".sauce-selector .option-btn");
-        sauceBtns.forEach(btn => {
-          btn.addEventListener("click", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            sauceBtns.forEach(b => b.classList.remove("active"));
-            btn.classList.add("active");
-            updateCardStates();
-          });
-        });
-      }
-
       const addBtn = card.querySelector(".add-btn");
       addBtn.addEventListener("click", () => {
-        let selectedOption = "";
-        let selectedSauce = "";
-        if (hasOptions) {
-          const activeBtn = card.querySelector(".spicy-selector .option-btn.active");
-          if (activeBtn) {
-            selectedOption = activeBtn.getAttribute("data-option");
-          }
+        if (itemHasOptions) {
+          openOptionsSheet(sec.title || "قسم", item, hasOptions, optionList, hasSauces, sauceList, hasPieceOption);
+        } else {
+          addToCart(sec.title || "قسم", item, 0);
         }
-        if (hasSauces) {
-          const activeSauce = card.querySelector(".sauce-selector .option-btn.active");
-          if (activeSauce) {
-            selectedSauce = activeSauce.getAttribute("data-sauce");
-          }
-        }
-
-        let combinedOption = "";
-        if (selectedOption && selectedSauce) {
-          combinedOption = `${selectedOption} + صوص ${selectedSauce}`;
-        } else if (selectedOption) {
-          combinedOption = selectedOption;
-        } else if (selectedSauce) {
-          combinedOption = `صوص ${selectedSauce}`;
-        }
-
-        addToCart(sec.title || "قسم", item, combinedOption);
       });
 
       const getActiveItemId = () => {
-        let selectedOption = "";
-        let selectedSauce = "";
-        if (hasOptions) {
-          const activeBtn = card.querySelector(".spicy-selector .option-btn.active");
-          if (activeBtn) {
-            selectedOption = activeBtn.getAttribute("data-option");
-          }
-        }
-        if (hasSauces) {
-          const activeSauce = card.querySelector(".sauce-selector .option-btn.active");
-          if (activeSauce) {
-            selectedSauce = activeSauce.getAttribute("data-sauce");
-          }
-        }
-
-        let combinedOption = "";
-        if (selectedOption && selectedSauce) {
-          combinedOption = `${selectedOption} + صوص ${selectedSauce}`;
-        } else if (selectedOption) {
-          combinedOption = selectedOption;
-        } else if (selectedSauce) {
-          combinedOption = `صوص ${selectedSauce}`;
-        }
-
-        const customItem = {
-          ...item,
-          name: combinedOption ? `${item.name} (${combinedOption})` : item.name
-        };
-        return stableItemId(sec.title || "قسم", customItem);
+        return stableItemId(sec.title || "قسم", item);
       };
 
       const minusBtn = card.querySelector(".qty-controller .minus");
@@ -924,8 +845,16 @@ function setupCartUI() {
     }
   });
 
+  const optionsClose = $("#optionsClose");
+  const optionsOverlay = $("#optionsOverlay");
+  if (optionsClose) optionsClose.addEventListener("click", closeOptionsSheet);
+  if (optionsOverlay) optionsOverlay.addEventListener("click", closeOptionsSheet);
+
   window.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") closeCart();
+    if (e.key === "Escape") {
+      closeCart();
+      closeOptionsSheet();
+    }
   });
 }
 
@@ -943,17 +872,198 @@ function closeCart() {
   document.body.style.overflow = "";
 }
 
-function addToCart(sectionTitle, item, selectedOption = "") {
-  checkCartTTLAndMaybeClear({ notify: true });
+function openOptionsSheet(sectionTitle, item, hasOptions, optionList, hasSauces, sauceList, hasPieceOption) {
+  const overlay = $("#optionsOverlay");
+  const sheet = $("#optionsSheet");
+  const body = $("#optionsSheetBody");
+  let addBtn = $("#optionsAddBtn");
 
-  const customItem = {
-    ...item,
-    name: selectedOption ? `${item.name} (${selectedOption})` : item.name
+  if (!overlay || !sheet || !body || !addBtn) return;
+
+  // Clone and replace addBtn immediately to keep its reference active in DOM
+  const newAddBtn = addBtn.cloneNode(true);
+  addBtn.replaceWith(newAddBtn);
+  addBtn = newAddBtn;
+
+  const safeName = escapeHtml(item.name || "منتج");
+  const safeDesc = escapeHtml(item.description || "");
+  const imgSrc = item.image || "";
+
+  let optionsHtml = "";
+  if (hasOptions) {
+    optionsHtml += `
+      <div class="option-title" style="font-size: 13px; color: var(--text); font-weight: 700; margin-bottom: 6px; text-align: right;">الاختيار:</div>
+      <div class="option-selector spicy-selector">
+        ${optionList.map((opt, oIdx) => `
+          <button class="option-btn${oIdx === 0 ? " active" : ""}" type="button" data-option="${opt}">
+            ${opt}
+          </button>
+        `).join("")}
+      </div>
+    `;
+  }
+  if (hasSauces) {
+    optionsHtml += `
+      <div class="option-title" style="font-size: 13px; color: var(--text); font-weight: 700; margin-bottom: 6px; text-align: right;">الصوص:</div>
+      <div class="option-selector sauce-selector">
+        ${sauceList.map((sauce, sIdx) => `
+          <button class="option-btn${sIdx === 0 ? " active" : ""}" type="button" data-sauce="${sauce}">
+            ${sauce}
+          </button>
+        `).join("")}
+      </div>
+    `;
+  }
+  if (hasPieceOption) {
+    const showTwoPieces = ((item.name || "").trim() === "فرايدو فريندز");
+    optionsHtml += `
+      <div class="option-title" style="font-size: 13px; color: var(--text); font-weight: 700; margin-bottom: 6px; text-align: right;">تبديل صدر بدل ورك:</div>
+      <div class="option-selector piece-selector">
+        <button class="option-btn active" type="button" data-piece="بدون تبديل" data-price-add="0">بدون تبديل</button>
+        <button class="option-btn" type="button" data-piece="تبديل 1 ورك إلى صدر (+25 ج)" data-price-add="25">تبديل 1 ورك إلى صدر (+25 ج)</button>
+        ${showTwoPieces ? `
+          <button class="option-btn" type="button" data-piece="تبديل 2 ورك إلى صدر (+50 ج)" data-price-add="50">تبديل 2 ورك إلى صدر (+50 ج)</button>
+        ` : ""}
+      </div>
+    `;
+  }
+
+  body.innerHTML = `
+    ${imgSrc ? `
+      <div class="options-sheet-media">
+        <img src="${escapeAttr(normalizeImgSrc(imgSrc))}" alt="${safeName}" />
+      </div>
+    ` : ""}
+    <div class="options-sheet-info">
+      <h3>${safeName}</h3>
+      <p>${safeDesc}</p>
+    </div>
+    <div class="options-sheet-selectors" style="margin-top: 10px;">
+      ${optionsHtml}
+    </div>
+  `;
+
+  const updateSheetPrice = () => {
+    let priceAdd = 0;
+    if (hasPieceOption) {
+      const activePiece = body.querySelector(".piece-selector .option-btn.active");
+      if (activePiece) {
+        priceAdd = Number(activePiece.getAttribute("data-price-add") || 0);
+      }
+    }
+    const basePrice = parsePriceNumber(item.price);
+    const finalPrice = basePrice + priceAdd;
+    addBtn.textContent = `أضف للسلة — ${formatNumber(finalPrice)} ج`;
   };
 
+  if (hasOptions) {
+    const btns = body.querySelectorAll(".spicy-selector .option-btn");
+    btns.forEach(btn => {
+      btn.addEventListener("click", () => {
+        console.log("Option (Spicy) clicked:", btn.getAttribute("data-option"));
+        btns.forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        updateSheetPrice();
+      });
+    });
+  }
+  if (hasSauces) {
+    const btns = body.querySelectorAll(".sauce-selector .option-btn");
+    btns.forEach(btn => {
+      btn.addEventListener("click", () => {
+        console.log("Option (Sauce) clicked:", btn.getAttribute("data-sauce"));
+        btns.forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        updateSheetPrice();
+      });
+    });
+  }
+  if (hasPieceOption) {
+    const btns = body.querySelectorAll(".piece-selector .option-btn");
+    btns.forEach(btn => {
+      btn.addEventListener("click", () => {
+        console.log("Option (Piece) clicked:", btn.getAttribute("data-piece"));
+        btns.forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        updateSheetPrice();
+      });
+    });
+  }
+
+  updateSheetPrice();
+
+  addBtn.addEventListener("click", () => {
+    let selectedOption = "";
+    let selectedSauce = "";
+    let selectedPiece = "";
+    let priceAdd = 0;
+
+    if (hasOptions) {
+      const activeBtn = body.querySelector(".spicy-selector .option-btn.active");
+      if (activeBtn) selectedOption = activeBtn.getAttribute("data-option");
+    }
+    if (hasSauces) {
+      const activeSauce = body.querySelector(".sauce-selector .option-btn.active");
+      if (activeSauce) selectedSauce = activeSauce.getAttribute("data-sauce");
+    }
+    if (hasPieceOption) {
+      const activePiece = body.querySelector(".piece-selector .option-btn.active");
+      if (activePiece) {
+        selectedPiece = activePiece.getAttribute("data-piece");
+        priceAdd = Number(activePiece.getAttribute("data-price-add") || 0);
+      }
+    }
+
+    const parts = [];
+    if (selectedOption) parts.push(selectedOption);
+    if (selectedSauce) parts.push(`صوص ${selectedSauce}`);
+    if (selectedPiece && selectedPiece !== "بدون تبديل") {
+      if (selectedPiece.includes("1 ورك") || selectedPiece.includes("1 صدر")) {
+        parts.push("تبديل 1 ورك إلى صدر [+25ج]");
+      } else if (selectedPiece.includes("2 ورك") || selectedPiece.includes("2 صدر")) {
+        parts.push("تبديل 2 ورك إلى صدر [+50ج]");
+      } else {
+        parts.push(selectedPiece);
+      }
+    }
+
+    const combinedOption = parts.join(" - ");
+
+    const customItem = {
+      ...item,
+      name: combinedOption ? `${item.name} (${combinedOption})` : item.name
+    };
+
+    addToCart(sectionTitle, customItem, priceAdd);
+    closeOptionsSheet();
+  });
+
+  overlay.hidden = false;
+  sheet.classList.add("open");
+  sheet.setAttribute("aria-hidden", "false");
+  document.body.style.overflow = "hidden";
+}
+
+function closeOptionsSheet() {
+  const overlay = $("#optionsOverlay");
+  const sheet = $("#optionsSheet");
+  if (sheet) {
+    sheet.classList.remove("open");
+    sheet.setAttribute("aria-hidden", "true");
+  }
+  if (overlay) overlay.hidden = true;
+  document.body.style.overflow = "";
+}
+
+
+function addToCart(sectionTitle, customItem, priceAdd = 0) {
+  checkCartTTLAndMaybeClear({ notify: true });
+
   const id = stableItemId(sectionTitle, customItem);
-  const priceText = String(item.price || "").trim();
-  const priceNum = parsePriceNumber(priceText);
+  const basePriceText = String(customItem.price || "").trim();
+  const basePriceNum = parsePriceNumber(basePriceText);
+  const priceNum = basePriceNum + priceAdd;
+  const priceText = `${formatNumber(priceNum)} ج`;
 
   if (!cart.items[id]) {
     cart.items[id] = {
@@ -962,7 +1072,7 @@ function addToCart(sectionTitle, item, selectedOption = "") {
       section: sectionTitle || "",
       priceText,
       priceNum,
-      image: item.image || "",
+      image: customItem.image || "",
       qty: 1,
       note: ""
     };
@@ -993,48 +1103,43 @@ function updateCardStates() {
     const itemName = card.dataset.itemName;
     const itemPrice = card.dataset.itemPrice;
     const itemImage = card.dataset.itemImage;
-
-    const activeOptionBtn = card.querySelector(".spicy-selector .option-btn.active");
-    const selectedOption = activeOptionBtn ? (activeOptionBtn.getAttribute("data-option") || "") : "";
-
-    const activeSauceBtn = card.querySelector(".sauce-selector .option-btn.active");
-    const selectedSauce = activeSauceBtn ? (activeSauceBtn.getAttribute("data-sauce") || "") : "";
-
-    let combinedOption = "";
-    if (selectedOption && selectedSauce) {
-      combinedOption = `${selectedOption} + صوص ${selectedSauce}`;
-    } else if (selectedOption) {
-      combinedOption = selectedOption;
-    } else if (selectedSauce) {
-      combinedOption = `صوص ${selectedSauce}`;
-    }
-
-    const item = {
-      name: itemName,
-      price: itemPrice,
-      image: itemImage
-    };
-
-    const customItem = {
-      ...item,
-      name: combinedOption ? `${item.name} (${combinedOption})` : item.name
-    };
-
-    const id = stableItemId(sectionTitle, customItem);
-    const cartItem = cart.items[id];
+    const hasOpts = card.dataset.hasOptions === "true";
 
     const addBtn = card.querySelector(".add-btn");
     const qtyController = card.querySelector(".qty-controller");
     const qtyNum = card.querySelector(".qty-controller .qty-num");
 
-    if (addBtn && qtyController && qtyNum) {
-      if (cartItem && cartItem.qty > 0) {
-        addBtn.style.display = "none";
-        qtyController.style.display = "inline-flex";
-        qtyNum.textContent = cartItem.qty;
-      } else {
+    if (hasOpts) {
+      if (addBtn && qtyController) {
         addBtn.style.display = "block";
         qtyController.style.display = "none";
+      }
+    } else {
+      const item = {
+        name: itemName,
+        price: itemPrice,
+        image: itemImage
+      };
+      const id = stableItemId(sectionTitle, item);
+      const cartItem = cart.items[id];
+
+      if (addBtn && qtyController && qtyNum) {
+        if (cartItem && cartItem.qty > 0) {
+          addBtn.style.display = "none";
+          qtyController.style.display = "inline-flex";
+          qtyNum.textContent = cartItem.qty;
+        } else {
+          addBtn.style.display = "block";
+          qtyController.style.display = "none";
+        }
+      }
+    }
+
+    const priceEl = card.querySelector(".price");
+    if (priceEl) {
+      const basePrice = parsePriceNumber(itemPrice);
+      if (Number.isFinite(basePrice)) {
+        priceEl.textContent = `${formatNumber(basePrice)} ج`;
       }
     }
   });
@@ -1207,9 +1312,9 @@ function buildOrderPayload({ customerName, customerPhone, area, address, deliver
 
   const itemsText = entries
     .map((it) => {
-      const p = it.priceText ? ` — ${it.priceText}` : "";
+      const finalItemPrice = it.priceNum * it.qty;
       const noteText = it.note && it.note.trim() ? ` [ملاحظة: ${it.note.trim()}]` : "";
-      return `${it.name} × ${it.qty}${p}${noteText}`;
+      return `${it.qty}× ${it.name} — ${formatNumber(finalItemPrice)} ج${noteText}`;
     })
     .join("\n");
 
@@ -1315,8 +1420,8 @@ function buildWhatsAppCartUrl() {
 
   msg += `الطلبات:\n`;
   for (const it of entries) {
-    const linePrice = it.priceText ? ` — ${it.priceText}` : "";
-    msg += `• ${it.name} × ${it.qty}${linePrice}\n`;
+    const finalItemPrice = it.priceNum * it.qty;
+    msg += `${it.qty}× ${it.name} — ${formatNumber(finalItemPrice)} ج\n`;
     if (it.note && it.note.trim()) {
       msg += `  (ملاحظة: ${it.note.trim()})\n`;
     }
@@ -1328,12 +1433,12 @@ function buildWhatsAppCartUrl() {
   }, 0);
 
   if (numericTotal > 0) {
-    msg += `\n💵 إجمالي المنتجات: ${formatNumber(numericTotal)}\n`;
     if (orderType === "delivery") {
+      msg += `\n💵 إجمالي المنتجات: ${formatNumber(numericTotal)} ج\n`;
       msg += `🛵 خدمة التوصيل: ${formatNumber(deliveryFee)} ج\n`;
       msg += `💰 الإجمالي النهائي: ${formatNumber(numericTotal + deliveryFee)} ج\n`;
     } else {
-      msg += `💰 الإجمالي النهائي: ${formatNumber(numericTotal)} ج\n`;
+      msg += `\n💰 الإجمالي النهائي: ${formatNumber(numericTotal)} ج\n`;
     }
   }
 
@@ -1360,7 +1465,7 @@ function parsePriceNumber(priceText) {
 
 function formatNumber(n) {
   try {
-    return new Intl.NumberFormat("ar-EG").format(n);
+    return new Intl.NumberFormat("en-US").format(n);
   } catch {
     return String(n);
   }
@@ -1447,6 +1552,7 @@ function toast(text) {
       font-weight: 900; font-size: 13px; color: #111;
       backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
       opacity: 0; transition: opacity 160ms ease;
+      pointer-events: none;
     `;
     document.body.appendChild(el);
   }
