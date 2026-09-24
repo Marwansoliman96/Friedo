@@ -25,14 +25,14 @@
   --s-5: 24px;
   --s-6: 32px;
 
-  --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Noto Kufi Arabic", "Cairo", Tahoma, Arial;
+  --font: "Alexandria", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Tahoma, Arial;
 
-  --fs-1: 12px;
-  --fs-2: 14px;
-  --fs-3: 16px;
-  --fs-4: 18px;
-  --fs-5: 22px;
-  --fs-6: 26px;
+  --fs-1: 10px;
+  --fs-2: 12px;
+  --fs-3: 14px;
+  --fs-4: 16px;
+  --fs-5: 20px;
+  --fs-6: 24px;
 
   --bg: #fffdf7;
   --text: #141414;
@@ -45,6 +45,10 @@
 
 * {
   box-sizing: border-box;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
 }
 
 html {
@@ -221,7 +225,8 @@ body::before {
   color: var(--text);
   border-radius: 999px;
   padding: 10px 14px;
-  font-weight: 900;
+  font-size: var(--fs-2);
+  font-weight: 700;
   white-space: nowrap;
   cursor: pointer;
   transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
@@ -349,17 +354,13 @@ body::before {
 }
 
 .card-title {
-  margin: 0 0 6px;
-  font-size: var(--fs-4);
+  margin: 0 0 10px;
+  font-size: var(--fs-3);
   line-height: 1.15;
 }
 
 .card-desc {
-  margin: 0 0 var(--s-3);
-  font-size: var(--fs-2);
-  color: var(--muted);
-  line-height: 1.5;
-  min-height: 2.8em;
+  display: none;
 }
 
 .card-footer {
@@ -370,9 +371,13 @@ body::before {
 }
 
 .price {
-  font-weight: 900;
-  font-size: 16px;
+  font-weight: 700;
+  font-size: var(--fs-2);
   color: color-mix(in srgb, var(--theme) 85%, #111);
+  margin: 0;
+  line-height: 1;
+  display: flex;
+  align-items: center;
 }
 
 .add-btn {
@@ -383,8 +388,12 @@ body::before {
   border-radius: 14px;
   background: color-mix(in srgb, var(--theme) 92%, #ffffff);
   color: #fff;
-  font-weight: 900;
-  font-size: 13px;
+  font-weight: 600;
+  font-size: var(--fs-2);
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   /* أصغر ✅ */
   white-space: nowrap;
   /* يمنع تكسير "أضف للسلة" ✅ */
@@ -769,6 +778,7 @@ body::before {
   display: flex;
   align-items: center;
   gap: 8px;
+  direction: ltr; /* Force minus on left, plus on right */
 }
 
 .qty-btn {
@@ -1125,9 +1135,10 @@ body::before {
 
   /* Smart Quantity Controller in Product Cards */
   .qty-controller {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  direction: ltr; /* Force minus on left, plus on right */
     background: rgba(20, 20, 20, 0.04);
     border: 1px solid rgba(20, 20, 20, 0.08);
     padding: 4px;
@@ -1262,4 +1273,225 @@ body::before {
     margin: 0;
     font-size: 13px;
     color: var(--muted);
-  }
+  }
+
+/* Special Horizontal Grid for Offers */
+.horizontal-grid {
+  display: flex !important;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scroll-snap-type: x mandatory;
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+  gap: var(--s-3);
+  padding: 10px 4px 20px 4px;
+}
+.horizontal-grid::-webkit-scrollbar {
+  display: none;
+}
+.horizontal-grid article {
+  flex: 0 0 85%;
+  max-width: 340px;
+  scroll-snap-align: start;
+}
+
+/* Special Offers Animations */
+@keyframes pulse-glow {
+  0% { box-shadow: 0 0 0 0 rgba(255, 69, 0, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(255, 69, 0, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 69, 0, 0); }
+}
+
+.special-offers-grid article {
+  border: 1px solid rgba(255, 69, 0, 0.3) !important;
+  animation: pulse-glow 2s infinite;
+  position: relative;
+  overflow: hidden;
+  
+  /* Make the card a perfect square */
+  aspect-ratio: 1 / 1;
+  border-radius: 24px;
+}
+
+/* Image covers the entire square */
+.special-offers-grid .card-media {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  border-bottom: none;
+  z-index: 1;
+}
+
+/* Text overlaid at the bottom with a dark gradient */
+.special-offers-grid .card-body {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  background: linear-gradient(to top, rgba(0,0,0,0.9) 15%, rgba(0,0,0,0) 100%);
+  color: #fff;
+  padding-top: 60px; /* smooth fade transition */
+}
+
+/* Ensure text colors are readable on dark gradient */
+.special-offers-grid .card-title,
+.special-offers-grid .price {
+  color: #fff !important;
+}
+.special-offers-grid .card-desc {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Shimmer Effect */
+.special-offers-grid article::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.35) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: skewX(-25deg);
+  animation: shimmer 3.5s infinite;
+  z-index: 10;
+  pointer-events: none;
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  20% { left: 200%; }
+  100% { left: 200%; }
+}
+
+/* Premium Custom Select */
+.premium-select {
+  flex: 1;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-color: var(--bg);
+  /* Custom Arrow SVG */
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: left 12px center;
+  background-size: 16px;
+  padding: 10px 12px 10px 36px; /* Space for arrow on the left */
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.03);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.premium-select:focus {
+  outline: none;
+  border-color: var(--theme);
+  box-shadow: 0 0 0 3px rgba(255, 43, 43, 0.15);
+}
+
+.premium-select:invalid, 
+.premium-select option[value=""][disabled] {
+  color: var(--muted);
+}
+
+/* =========================
+   Custom Dropdown System
+   ========================= */
+.custom-dropdown {
+  position: relative;
+  flex: 1;
+}
+
+.custom-dropdown-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--bg);
+  padding: 10px 14px;
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.03);
+  transition: all 0.2s ease;
+}
+
+.custom-dropdown-trigger.active {
+  border-color: var(--theme);
+  box-shadow: 0 0 0 3px rgba(255, 43, 43, 0.15);
+}
+
+.custom-dropdown-trigger svg {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.2s ease;
+  color: var(--text);
+}
+
+.custom-dropdown-trigger.active svg {
+  transform: rotate(180deg);
+  color: var(--theme);
+}
+
+.custom-dropdown-options {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: var(--bg);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  border: 1px solid var(--hairline);
+  z-index: 999;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.custom-dropdown-options.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* Open Upwards Variation */
+.custom-dropdown-options.open-up {
+  top: auto;
+  bottom: calc(100% + 6px);
+  transform: translateY(10px);
+}
+.custom-dropdown-options.show.open-up {
+  transform: translateY(0);
+}
+
+.custom-option {
+  padding: 12px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.custom-option:last-child {
+  border-bottom: none;
+}
+
+.custom-option:hover {
+  background: rgba(255, 43, 43, 0.06);
+  color: var(--theme);
+}

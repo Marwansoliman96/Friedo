@@ -84,6 +84,7 @@ async function init() {
   setupRevealAnimations();
   setupScrollSpy();
   setupBackToTop();
+  setupAutoScroll();
 
   // ✅ جدولة مسح السلة لو انتهت المدة أثناء بقاء الصفحة مفتوحة
   scheduleCartExpiryCheck();
@@ -196,12 +197,21 @@ function buildMenu(data) {
 
     const items = Array.isArray(sec.items) ? sec.items : [];
 
+    items.sort((a, b) => {
+      const orderA = a.order !== undefined ? a.order : 9999;
+      const orderB = b.order !== undefined ? b.order : 9999;
+      return orderA - orderB;
+    });
+
+    const isSpecialOffers = (sec.title || "").trim() === "عروض المدارس";
+    const gridClass = isSpecialOffers ? "grid horizontal-grid special-offers-grid" : "grid";
+
     sectionEl.innerHTML = `
       <div class="section-head">
         <h2 class="section-title">${escapeHtml(sec.title || "قسم")}</h2>
         <div class="section-count">${items.length} عنصر</div>
       </div>
-      <div class="grid"></div>
+      <div class="${gridClass}"></div>
     `;
 
     const grid = $(".grid", sectionEl);
@@ -252,13 +262,24 @@ function buildMenu(data) {
       }
 
       let hasPieceOption = false;
+      let maxSwapsPerItem = 0;
       if (
         itemName === "فرايدو ميل" ||
         itemName === "ميكس ميل" ||
         itemName === "فرايدو سناك" ||
-        itemName === "فرايدو فريندز"
+        itemName === "عرض التوفير"
       ) {
         hasPieceOption = true;
+        maxSwapsPerItem = 1;
+      } else if (itemName === "فرايدو فريندز") {
+        hasPieceOption = true;
+        maxSwapsPerItem = 2;
+      } else if (itemName === "عرض الفرايد") {
+        hasPieceOption = true;
+        maxSwapsPerItem = 3;
+      } else if (itemName === "عرض العيلة") {
+        hasPieceOption = true;
+        maxSwapsPerItem = 6;
       }
 
       let hasSauces = false;
@@ -292,7 +313,7 @@ function buildMenu(data) {
           <div class="card-footer">
             <div class="price">${safePrice}</div>
             <div class="card-action-container">
-              <button class="add-btn" type="button">أضف للسلة</button>
+              <button class="add-btn" type="button">تفاصيل</button>
               <div class="qty-controller" style="display: none;">
                 <button class="qty-btn minus" type="button">−</button>
                 <span class="qty-num">0</span>
@@ -306,7 +327,7 @@ function buildMenu(data) {
       const addBtn = card.querySelector(".add-btn");
       addBtn.addEventListener("click", () => {
         if (itemHasOptions) {
-          openOptionsSheet(sec.title || "قسم", item, hasOptions, optionList, hasSauces, sauceList, hasPieceOption);
+          openOptionsSheet(sec.title || "قسم", item, hasOptions, optionList, hasSauces, sauceList, hasPieceOption, maxSwapsPerItem);
         } else {
           addToCart(sec.title || "قسم", item, 0);
         }
@@ -872,7 +893,7 @@ function closeCart() {
   document.body.style.overflow = "";
 }
 
-function openOptionsSheet(sectionTitle, item, hasOptions, optionList, hasSauces, sauceList, hasPieceOption) {
+function openOptionsSheet(sectionTitle, item, hasOptions, optionList, hasSauces, sauceList, hasPieceOption, maxSwapsPerItem = 1) {
   const overlay = $("#optionsOverlay");
   const sheet = $("#optionsSheet");
   const body = $("#optionsSheetBody");
@@ -890,6 +911,61 @@ function openOptionsSheet(sectionTitle, item, hasOptions, optionList, hasSauces,
   const imgSrc = item.image || "";
 
   let optionsHtml = "";
+  const isFrayedOffer = (item.name || "").trim() === "عرض الفرايد";
+  const isTawfeerOffer = (item.name || "").trim() === "عرض التوفير";
+  const isFamilyOffer = (item.name || "").trim() === "عرض العيلة";
+
+  const mainOpts = ["ثومية", "كولسلو"];
+  const extraOpts = ["ثومية", "سويت شيلي", "تايجر", "ساموراي", "فاير صوص", "باربكيو"];
+
+  if (isFrayedOffer) {
+    optionsHtml += `
+      <div class="option-title" style="font-size: 13px; color: var(--text); font-weight: 700; margin-bottom: 6px; text-align: right;">صوص اساسي (علبتين):</div>
+      <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+        ${renderCustomSelect("fMain1", "العلبة الأولى...", mainOpts)}
+        ${renderCustomSelect("fMain2", "العلبة الثانية...", mainOpts)}
+      </div>
+
+      <div class="option-title" style="font-size: 13px; color: var(--text); font-weight: 700; margin-bottom: 6px; text-align: right;">صوص جانبي (علبتين):</div>
+      <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+        ${renderCustomSelect("fExtra1", "العلبة الأولى...", extraOpts)}
+        ${renderCustomSelect("fExtra2", "العلبة الثانية...", extraOpts)}
+      </div>
+    `;
+  }
+
+  if (isTawfeerOffer) {
+    optionsHtml += `
+      <div class="option-title" style="font-size: 13px; color: var(--text); font-weight: 700; margin-bottom: 6px; text-align: right;">صوص اساسي:</div>
+      <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+        ${renderCustomSelect("tMain", "العلبة الأساسية...", mainOpts)}
+      </div>
+
+      <div class="option-title" style="font-size: 13px; color: var(--text); font-weight: 700; margin-bottom: 6px; text-align: right;">صوص جانبي:</div>
+      <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+        ${renderCustomSelect("tExtra", "العلبة الجانبية...", extraOpts)}
+      </div>
+    `;
+  }
+
+  if (isFamilyOffer) {
+    optionsHtml += `
+      <div class="option-title" style="font-size: 13px; color: var(--text); font-weight: 700; margin-bottom: 6px; text-align: right;">صوص اساسي (3 علب):</div>
+      <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+        ${renderCustomSelect("faMain1", "الأولى...", mainOpts)}
+        ${renderCustomSelect("faMain2", "الثانية...", mainOpts)}
+        ${renderCustomSelect("faMain3", "الثالثة...", mainOpts)}
+      </div>
+
+      <div class="option-title" style="font-size: 13px; color: var(--text); font-weight: 700; margin-bottom: 6px; text-align: right;">صوص جانبي (3 علب):</div>
+      <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+        ${renderCustomSelect("faExtra1", "الأولى...", extraOpts)}
+        ${renderCustomSelect("faExtra2", "الثانية...", extraOpts)}
+        ${renderCustomSelect("faExtra3", "الثالثة...", extraOpts)}
+      </div>
+    `;
+  }
+
   if (hasOptions) {
     optionsHtml += `
       <div class="option-title" style="font-size: 13px; color: var(--text); font-weight: 700; margin-bottom: 6px; text-align: right;">الاختيار:</div>
@@ -915,15 +991,14 @@ function openOptionsSheet(sectionTitle, item, hasOptions, optionList, hasSauces,
     `;
   }
   if (hasPieceOption) {
-    const showTwoPieces = ((item.name || "").trim() === "فرايدو فريندز");
     optionsHtml += `
-      <div class="option-title" style="font-size: 13px; color: var(--text); font-weight: 700; margin-bottom: 6px; text-align: right;">تبديل صدر بدل ورك:</div>
-      <div class="option-selector piece-selector">
-        <button class="option-btn active" type="button" data-piece="بدون تبديل" data-price-add="0">بدون تبديل</button>
-        <button class="option-btn" type="button" data-piece="تبديل 1 ورك إلى صدر (+25 ج)" data-price-add="25">تبديل 1 ورك إلى صدر (+25 ج)</button>
-        ${showTwoPieces ? `
-          <button class="option-btn" type="button" data-piece="تبديل 2 ورك إلى صدر (+50 ج)" data-price-add="50">تبديل 2 ورك إلى صدر (+50 ج)</button>
-        ` : ""}
+      <div class="option-title" style="font-size: 13px; color: var(--text); font-weight: 700; margin-bottom: 6px; text-align: right;">تبديل صدر بدل ورك (+25 ج):</div>
+      <div class="option-selector piece-counter" style="display: flex; gap: 10px; margin-bottom: 15px;">
+        <div class="qty-controller" style="display: inline-flex;">
+          <button class="qty-btn" type="button" id="optSwapMinus">−</button>
+          <span class="qty-num" id="optSwapNum">0</span>
+          <button class="qty-btn" type="button" id="optSwapPlus">+</button>
+        </div>
       </div>
     `;
   }
@@ -943,18 +1018,74 @@ function openOptionsSheet(sectionTitle, item, hasOptions, optionList, hasSauces,
     </div>
   `;
 
+  let currentQty = 1;
+  let swapQty = 0;
+  const qtyNumEl = document.getElementById("optionsQtyNum");
+  if (qtyNumEl) qtyNumEl.textContent = currentQty;
+
   const updateSheetPrice = () => {
-    let priceAdd = 0;
-    if (hasPieceOption) {
-      const activePiece = body.querySelector(".piece-selector .option-btn.active");
-      if (activePiece) {
-        priceAdd = Number(activePiece.getAttribute("data-price-add") || 0);
-      }
-    }
+    let priceAdd = swapQty * 25;
     const basePrice = parsePriceNumber(item.price);
-    const finalPrice = basePrice + priceAdd;
+    const finalPrice = (basePrice * currentQty) + priceAdd;
     addBtn.textContent = `أضف للسلة — ${formatNumber(finalPrice)} ج`;
   };
+
+  const qtyMinusBtn = document.getElementById("optionsQtyMinus");
+  const qtyPlusBtn = document.getElementById("optionsQtyPlus");
+
+  if (qtyMinusBtn && qtyPlusBtn) {
+    const newMinus = qtyMinusBtn.cloneNode(true);
+    const newPlus = qtyPlusBtn.cloneNode(true);
+    qtyMinusBtn.replaceWith(newMinus);
+    qtyPlusBtn.replaceWith(newPlus);
+
+    newMinus.addEventListener("click", () => {
+      if (currentQty > 1) {
+        currentQty--;
+        if (qtyNumEl) qtyNumEl.textContent = currentQty;
+        if (hasPieceOption) {
+          const absoluteMax = maxSwapsPerItem * currentQty;
+          if (swapQty > absoluteMax) {
+            swapQty = absoluteMax;
+            const swapNumEl = document.getElementById("optSwapNum");
+            if (swapNumEl) swapNumEl.textContent = swapQty;
+          }
+        }
+        updateSheetPrice();
+      }
+    });
+
+    newPlus.addEventListener("click", () => {
+      currentQty++;
+      if (qtyNumEl) qtyNumEl.textContent = currentQty;
+      updateSheetPrice();
+    });
+  }
+
+  if (hasPieceOption) {
+    const swapMinus = document.getElementById("optSwapMinus");
+    const swapPlus = document.getElementById("optSwapPlus");
+    const swapNumEl = document.getElementById("optSwapNum");
+    if (swapMinus && swapPlus && swapNumEl) {
+      swapMinus.addEventListener("click", () => {
+        if (swapQty > 0) {
+          swapQty--;
+          swapNumEl.textContent = swapQty;
+          updateSheetPrice();
+        }
+      });
+      swapPlus.addEventListener("click", () => {
+        const absoluteMax = maxSwapsPerItem * currentQty;
+        if (swapQty < absoluteMax) {
+          swapQty++;
+          swapNumEl.textContent = swapQty;
+          updateSheetPrice();
+        } else {
+          toast(`أقصى عدد للتبديل لهذه الوجبة هو ${absoluteMax}!`);
+        }
+      });
+    }
+  }
 
   if (hasOptions) {
     const btns = body.querySelectorAll(".spicy-selector .option-btn");
@@ -978,25 +1109,11 @@ function openOptionsSheet(sectionTitle, item, hasOptions, optionList, hasSauces,
       });
     });
   }
-  if (hasPieceOption) {
-    const btns = body.querySelectorAll(".piece-selector .option-btn");
-    btns.forEach(btn => {
-      btn.addEventListener("click", () => {
-        console.log("Option (Piece) clicked:", btn.getAttribute("data-piece"));
-        btns.forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-        updateSheetPrice();
-      });
-    });
-  }
-
   updateSheetPrice();
 
   addBtn.addEventListener("click", () => {
     let selectedOption = "";
     let selectedSauce = "";
-    let selectedPiece = "";
-    let priceAdd = 0;
 
     if (hasOptions) {
       const activeBtn = body.querySelector(".spicy-selector .option-btn.active");
@@ -1006,35 +1123,109 @@ function openOptionsSheet(sectionTitle, item, hasOptions, optionList, hasSauces,
       const activeSauce = body.querySelector(".sauce-selector .option-btn.active");
       if (activeSauce) selectedSauce = activeSauce.getAttribute("data-sauce");
     }
-    if (hasPieceOption) {
-      const activePiece = body.querySelector(".piece-selector .option-btn.active");
-      if (activePiece) {
-        selectedPiece = activePiece.getAttribute("data-piece");
-        priceAdd = Number(activePiece.getAttribute("data-price-add") || 0);
+
+    const baseParts = [];
+    if (selectedOption) baseParts.push(selectedOption);
+    if (selectedSauce) baseParts.push(`صوص ${selectedSauce}`);
+
+    const shakeAndRed = (el) => {
+      if (!el) return;
+      let targetEl = el;
+      if (el.type === 'hidden' && el.parentElement.classList.contains('custom-dropdown')) {
+        targetEl = el.parentElement.querySelector('.custom-dropdown-trigger');
       }
-    }
-
-    const parts = [];
-    if (selectedOption) parts.push(selectedOption);
-    if (selectedSauce) parts.push(`صوص ${selectedSauce}`);
-    if (selectedPiece && selectedPiece !== "بدون تبديل") {
-      if (selectedPiece.includes("1 ورك") || selectedPiece.includes("1 صدر")) {
-        parts.push("تبديل 1 ورك إلى صدر [+25ج]");
-      } else if (selectedPiece.includes("2 ورك") || selectedPiece.includes("2 صدر")) {
-        parts.push("تبديل 2 ورك إلى صدر [+50ج]");
-      } else {
-        parts.push(selectedPiece);
-      }
-    }
-
-    const combinedOption = parts.join(" - ");
-
-    const customItem = {
-      ...item,
-      name: combinedOption ? `${item.name} (${combinedOption})` : item.name
+      targetEl.style.borderColor = "red";
+      targetEl.classList.add("shake-input");
+      targetEl.addEventListener("animationend", () => targetEl.classList.remove("shake-input"), { once: true });
     };
 
-    addToCart(sectionTitle, customItem, priceAdd);
+    if (isFrayedOffer) {
+      const fm1El = document.getElementById("fMain1");
+      const fm2El = document.getElementById("fMain2");
+      const fx1El = document.getElementById("fExtra1");
+      const fx2El = document.getElementById("fExtra2");
+
+      const fm1 = fm1El?.value || "";
+      const fm2 = fm2El?.value || "";
+      const fx1 = fx1El?.value || "";
+      const fx2 = fx2El?.value || "";
+
+      if (!fm1 || !fm2 || !fx1 || !fx2) {
+        if (!fm1) shakeAndRed(fm1El);
+        if (!fm2) shakeAndRed(fm2El);
+        if (!fx1) shakeAndRed(fx1El);
+        if (!fx2) shakeAndRed(fx2El);
+
+        toast("برجاء اختيار جميع الصوصات المطلوبة! ❗");
+        return;
+      }
+
+      baseParts.push(`رئيسي: ${fm1}+${fm2} | إضافي: ${fx1}+${fx2}`);
+    }
+
+    if (isTawfeerOffer) {
+      const tmEl = document.getElementById("tMain");
+      const txEl = document.getElementById("tExtra");
+
+      const tm = tmEl?.value || "";
+      const tx = txEl?.value || "";
+
+      if (!tm || !tx) {
+        if (!tm) shakeAndRed(tmEl);
+        if (!tx) shakeAndRed(txEl);
+
+        toast("برجاء اختيار جميع الصوصات المطلوبة! ❗");
+        return;
+      }
+
+      baseParts.push(`رئيسي: ${tm} | إضافي: ${tx}`);
+    }
+
+    if (isFamilyOffer) {
+      const famEl1 = document.getElementById("faMain1");
+      const famEl2 = document.getElementById("faMain2");
+      const famEl3 = document.getElementById("faMain3");
+      const faxEl1 = document.getElementById("faExtra1");
+      const faxEl2 = document.getElementById("faExtra2");
+      const faxEl3 = document.getElementById("faExtra3");
+
+      const fam1 = famEl1?.value || "";
+      const fam2 = famEl2?.value || "";
+      const fam3 = famEl3?.value || "";
+      const fax1 = faxEl1?.value || "";
+      const fax2 = faxEl2?.value || "";
+      const fax3 = faxEl3?.value || "";
+
+      if (!fam1 || !fam2 || !fam3 || !fax1 || !fax2 || !fax3) {
+        if (!fam1) shakeAndRed(famEl1);
+        if (!fam2) shakeAndRed(famEl2);
+        if (!fam3) shakeAndRed(famEl3);
+        if (!fax1) shakeAndRed(faxEl1);
+        if (!fax2) shakeAndRed(faxEl2);
+        if (!fax3) shakeAndRed(faxEl3);
+
+        toast("برجاء اختيار جميع الصوصات المطلوبة! ❗");
+        return;
+      }
+
+      baseParts.push(`رئيسي: ${fam1}+${fam2}+${fam3} | إضافي: ${fax1}+${fax2}+${fax3}`);
+    }
+
+    const normalQty = currentQty - swapQty;
+
+    // 1. Add swapped items
+    if (swapQty > 0) {
+      const swapParts = [...baseParts, "مع تبديل ورك بصدر"];
+      const swapName = swapParts.length ? `${item.name} (${swapParts.join(" - ")})` : item.name;
+      addToCart(sectionTitle, { ...item, name: swapName }, 25, swapQty);
+    }
+
+    // 2. Add normal items
+    if (normalQty > 0) {
+      const normalName = baseParts.length ? `${item.name} (${baseParts.join(" - ")})` : item.name;
+      addToCart(sectionTitle, { ...item, name: normalName }, 0, normalQty);
+    }
+
     closeOptionsSheet();
   });
 
@@ -1056,7 +1247,7 @@ function closeOptionsSheet() {
 }
 
 
-function addToCart(sectionTitle, customItem, priceAdd = 0) {
+function addToCart(sectionTitle, customItem, priceAdd = 0, qtyToAdd = 1) {
   checkCartTTLAndMaybeClear({ notify: true });
 
   const id = stableItemId(sectionTitle, customItem);
@@ -1073,11 +1264,11 @@ function addToCart(sectionTitle, customItem, priceAdd = 0) {
       priceText,
       priceNum,
       image: customItem.image || "",
-      qty: 1,
+      qty: qtyToAdd,
       note: ""
     };
   } else {
-    cart.items[id].qty += 1;
+    cart.items[id].qty += qtyToAdd;
   }
 
   saveCart();
@@ -1560,3 +1751,116 @@ function toast(text) {
   el.style.opacity = "1";
   toastTimer = setTimeout(() => (el.style.opacity = "0"), 1600);
 }
+
+/* =========================
+   Auto Scroll for Horizontal Grids
+   ========================= */
+function setupAutoScroll() {
+  const horizontalGrids = document.querySelectorAll('.horizontal-grid');
+  horizontalGrids.forEach(grid => {
+    let scrollTimer;
+    let isPaused = false;
+
+    const startScroll = () => {
+      scrollTimer = setInterval(() => {
+        if (isPaused) return;
+        const isRtl = document.documentElement.dir === 'rtl' || getComputedStyle(grid).direction === 'rtl' || true; // Force RTL for Arabic layout
+        const maxScroll = grid.scrollWidth - grid.clientWidth;
+
+        if (Math.abs(grid.scrollLeft) >= maxScroll - 10) {
+          grid.scrollTo({ left: 0, behavior: 'smooth' });
+        } else {
+          const firstCard = grid.querySelector('article');
+          const cardWidth = firstCard ? firstCard.clientWidth + 16 : 300;
+          grid.scrollBy({ left: isRtl ? -cardWidth : cardWidth, behavior: 'smooth' });
+        }
+      }, 3000);
+    };
+
+    grid.addEventListener('mouseenter', () => isPaused = true);
+    grid.addEventListener('mouseleave', () => isPaused = false);
+    grid.addEventListener('touchstart', () => isPaused = true, { passive: true });
+    grid.addEventListener('touchend', () => {
+      setTimeout(() => isPaused = false, 3000);
+    }, { passive: true });
+
+    startScroll();
+  });
+}
+
+/* =========================
+   Custom Dropdown Menu System
+   ========================= */
+function renderCustomSelect(id, placeholder, options) {
+  const optsHtml = options.map(opt => `<div class="custom-option" onclick="selectOption(this, '${opt}')">${opt}</div>`).join('');
+  return `
+    <div class="custom-dropdown" data-id="${id}">
+      <input type="hidden" id="${id}" value="">
+      <div class="custom-dropdown-trigger" onclick="toggleDropdown(this, event)">
+        <span class="trigger-text" style="color: var(--muted);">${placeholder}</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </div>
+      <div class="custom-dropdown-options">
+        ${optsHtml}
+      </div>
+    </div>
+  `;
+}
+
+window.toggleDropdown = function (triggerEl, event) {
+  event.stopPropagation();
+  const dropdownOptions = triggerEl.nextElementSibling;
+
+  // Close others
+  document.querySelectorAll('.custom-dropdown-options.show').forEach(el => {
+    if (el !== dropdownOptions) {
+      el.classList.remove('show');
+      el.classList.remove('open-up');
+    }
+  });
+  document.querySelectorAll('.custom-dropdown-trigger.active').forEach(el => {
+    if (el !== triggerEl) el.classList.remove('active');
+  });
+
+  if (!dropdownOptions.classList.contains('show')) {
+    const rect = triggerEl.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+
+    // If less than 300px space below, and more space above, open upwards
+    if (spaceBelow < 300 && spaceAbove > spaceBelow) {
+      dropdownOptions.classList.add('open-up');
+    } else {
+      dropdownOptions.classList.remove('open-up');
+    }
+  }
+
+  dropdownOptions.classList.toggle('show');
+  triggerEl.classList.toggle('active');
+};
+
+window.selectOption = function (optionEl, value) {
+  const dropdown = optionEl.closest('.custom-dropdown');
+  const input = dropdown.querySelector('input[type="hidden"]');
+  const triggerText = dropdown.querySelector('.trigger-text');
+  const trigger = dropdown.querySelector('.custom-dropdown-trigger');
+
+  input.value = value;
+  triggerText.textContent = value;
+  triggerText.style.color = "var(--text)";
+  triggerText.style.fontWeight = "900";
+
+  // Reset validation styles if they exist
+  trigger.style.borderColor = "var(--border)";
+
+  dropdown.querySelector('.custom-dropdown-options').classList.remove('show');
+  trigger.classList.remove('active');
+};
+
+// Close dropdowns on outside click
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.custom-dropdown')) {
+    document.querySelectorAll('.custom-dropdown-options.show').forEach(el => el.classList.remove('show'));
+    document.querySelectorAll('.custom-dropdown-trigger.active').forEach(el => el.classList.remove('active'));
+  }
+});

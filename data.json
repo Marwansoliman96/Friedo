@@ -104,6 +104,32 @@
   ],
   "sections": [
     {
+      "title": "عروض المدارس",
+      "items": [
+        {
+          "name": "عرض الفرايد",
+          "description": "6 قطع بروستد + 2 صوص رئيسي (ثومية/كولسلو) + 2 صوص إضافي + 3 خبز + بطاطس",
+          "price": "320 ج",
+          "image": "assets/images/fried.jpeg",
+          "order": 2
+        },
+        {
+          "name": "عرض التوفير",
+          "description": "2 قطعة بروستد + 2 قطعة ستريبس + صوص ثومية/كولسلو + صوص جانبي + بطاطس + 2 عيش",
+          "price": "170 ج",
+          "image": "assets/images/twfer.jpeg",
+          "order": 1
+        },
+        {
+          "name": "عرض العيلة",
+          "description": "12 قطعة بروستد + 3 صوص ثومية/كولسلو + 3 صوص جانبي + بطاطس + 6 عيش",
+          "price": "620 ج",
+          "image": "assets/images/family.jpeg",
+          "order": 3
+        }
+      ]
+    },
+    {
       "title": "الوجبات",
       "items": [
         {
