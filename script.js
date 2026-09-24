@@ -1160,7 +1160,7 @@ function openOptionsSheet(sectionTitle, item, hasOptions, optionList, hasSauces,
         return;
       }
 
-      baseParts.push(`رئيسي: ${fm1}+${fm2} | إضافي: ${fx1}+${fx2}`);
+      baseParts.push(`اساسي ${fm1}+${fm2} | إضافي: ${fx1}+${fx2}`);
     }
 
     if (isTawfeerOffer) {
@@ -1178,7 +1178,7 @@ function openOptionsSheet(sectionTitle, item, hasOptions, optionList, hasSauces,
         return;
       }
 
-      baseParts.push(`رئيسي: ${tm} | إضافي: ${tx}`);
+      baseParts.push(`اساسي ${tm} | إضافي: ${tx}`);
     }
 
     if (isFamilyOffer) {
@@ -1208,7 +1208,7 @@ function openOptionsSheet(sectionTitle, item, hasOptions, optionList, hasSauces,
         return;
       }
 
-      baseParts.push(`رئيسي: ${fam1}+${fam2}+${fam3} | إضافي: ${fax1}+${fax2}+${fax3}`);
+      baseParts.push(`اساسي ${fam1}+${fam2}+${fam3} | إضافي: ${fax1}+${fax2}+${fax3}`);
     }
 
     const normalQty = currentQty - swapQty;
