@@ -21,6 +21,8 @@ const state = {
   tabEls: [],
   activeId: null,
   lastTotalCount: null,
+  lastSentSignature: null,
+  lastSentTime: 0,
 };
 
 /* ---------- Storage ---------- */
@@ -761,6 +763,8 @@ function setupCartUI() {
 
   checkoutBtn.addEventListener("click", () => {
     try {
+      if (checkoutBtn.dataset.submitting === "true") return;
+
       checkCartTTLAndMaybeClear({ notify: true });
 
       const entries = Object.values(cart.items);
@@ -830,6 +834,14 @@ function setupCartUI() {
       const waUrl = buildWhatsAppCartUrl();
       if (!waUrl) return toast("أضف منتجات للسلة أولاً ❗");
 
+      // ✅ 1. تفعيل قفل الإرسال الفوري وتغيير حالة الزر بصرياً لمنع الضغط المتكرر
+      checkoutBtn.dataset.submitting = "true";
+      checkoutBtn.disabled = true;
+      checkoutBtn.style.opacity = "0.75";
+      checkoutBtn.style.pointerEvents = "none";
+      const originalCheckoutHtml = checkoutBtn.innerHTML;
+      checkoutBtn.innerHTML = `<span>جارٍ التحويل إلى واتساب... ⏳</span>`;
+
       const finalAddress = orderType === "delivery" ? address : "الفرع الرئيسي (استلام)";
       const payload = buildOrderPayload({
         customerName,
@@ -841,27 +853,58 @@ function setupCartUI() {
         orderType
       });
 
-      const sent = sendOrderToSheetFireAndForget(payload);
-      if (sent) toast("جارٍ ارسال البيانات… ✅");
+      // ✅ 2. حماية إضافية (Deduplication): منع تكرار نفس الطلب للشيت خلال 15 ثانية
+      const orderSignature = `${cleanPhone}_${customerName}_${payload.grandTotal}_${payload.items.length}`;
+      const now = Date.now();
+      const isDuplicate = (state.lastSentSignature === orderSignature) && (now - (state.lastSentTime || 0) < 15000);
 
-      // ✅ امسح بيانات العميل بعد الإتمام
+      if (!isDuplicate) {
+        state.lastSentSignature = orderSignature;
+        state.lastSentTime = now;
+        const sent = sendOrderToSheetFireAndForget(payload);
+        if (sent) toast("تم تسجيل الطلب وجارٍ فتح واتساب… ✅");
+      } else {
+        toast("جارٍ إعادة توجيهك إلى واتساب… ✅");
+      }
+
+      // ✅ 3. تفريغ السلة ومسح بيانات العميل لمنع تكرار الإرسال
       clearCustomer();
       applyCustomerToInputs();
       scheduleCustomerExpiryCheck();
-
+      clearCartStorage({ notify: false });
       updateCartActivity();
 
-      // Check if mobile device to bypass popup blockers and avoid blank tabs (handles desktop site mode on mobile too)
+      // Check if mobile device to bypass popup blockers and avoid blank tabs
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
         || (navigator.maxTouchPoints > 0 && window.innerWidth <= 1024);
+
       if (isMobile) {
-        // Use native protocol link to force launching the native WhatsApp app directly on mobile
         const nativeWaUrl = waUrl.replace("https://wa.me/", "whatsapp://send?phone=").replace("?text=", "&text=");
         window.location.href = nativeWaUrl;
       } else {
         window.open(waUrl, "_blank", "noopener");
       }
+
+      // إغلاق درج السلة
+      setTimeout(closeCart, 600);
+
+      // إعادة تهيئة الزر بعد 4 ثوانٍ تحسباً لرجوع العميل
+      setTimeout(() => {
+        if (checkoutBtn) {
+          checkoutBtn.dataset.submitting = "false";
+          checkoutBtn.disabled = false;
+          checkoutBtn.style.opacity = "1";
+          checkoutBtn.style.pointerEvents = "auto";
+          checkoutBtn.innerHTML = originalCheckoutHtml;
+        }
+      }, 4000);
     } catch (err) {
+      if (checkoutBtn) {
+        checkoutBtn.dataset.submitting = "false";
+        checkoutBtn.disabled = false;
+        checkoutBtn.style.opacity = "1";
+        checkoutBtn.style.pointerEvents = "auto";
+      }
       alert("حدث خطأ أثناء إتمام الطلب:\n" + err.message + "\n" + err.stack);
     }
   });
@@ -1717,13 +1760,6 @@ function escapeAttr(s) {
 function getPx(varName) {
   const v = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
   return Number(String(v).replace("px", "")) || 0;
-}
-
-function normalizeImgSrc(src) {
-  const s = String(src || "").trim();
-  if (!s) return "";
-  if (/^https?:\/\//i.test(s) || s.startsWith("data:")) return s;
-  return encodeURI(s);
 }
 
 
