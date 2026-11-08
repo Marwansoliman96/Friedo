@@ -179,6 +179,13 @@ function buildMenu(data) {
   const sections = Array.isArray(data.sections) ? data.sections : [];
 
   sections.forEach((sec, idx) => {
+    // Check if section is disabled or hidden
+    if (sec.enabled === false || sec.available === false || sec.hidden === true) return;
+
+    const rawItems = Array.isArray(sec.items) ? sec.items : [];
+    const items = rawItems.filter(item => item.enabled !== false && item.available !== false && item.hidden !== true);
+    if (items.length === 0) return;
+
     const id = slugify(sec.title || `section-${idx}`);
 
     const tab = document.createElement("button");
@@ -196,8 +203,6 @@ function buildMenu(data) {
     const sectionEl = document.createElement("section");
     sectionEl.className = "section";
     sectionEl.id = id;
-
-    const items = Array.isArray(sec.items) ? sec.items : [];
 
     items.sort((a, b) => {
       const orderA = a.order !== undefined ? a.order : 9999;

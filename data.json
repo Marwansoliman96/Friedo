@@ -105,6 +105,7 @@
   "sections": [
     {
       "title": "عروض المدارس",
+      "available": false,
       "items": [
         {
           "name": "عرض الفرايد",
