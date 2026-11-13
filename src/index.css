@@ -1,0 +1,197 @@
+@import "tailwindcss";
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+:root {
+  --brand-theme: #ff2b2b;
+  --brand-accent: #f7c96a;
+  --background: #fffdf7;
+  --foreground: #18181b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #fffdf7 !important;
+  color: #18181b !important;
+  font-family: 'Alexandria', system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  direction: rtl;
+}
+
+/* Fallback grid and cards that never break on mobile Safari */
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 14px;
+}
+
+@media (min-width: 640px) {
+  .menu-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .menu-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+}
+
+.food-card {
+  background: #ffffff;
+  border: 1px solid rgba(220, 215, 205, 0.7);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.food-card:active {
+  transform: scale(0.99);
+}
+
+.food-image-box {
+  position: relative;
+  width: 100%;
+  height: 180px;
+  background-color: #f5f3ee;
+  overflow: hidden;
+}
+
+.food-title {
+  color: #18181b;
+  font-weight: 800;
+  font-size: 14px;
+  margin: 0;
+}
+
+.food-desc {
+  color: #71717a;
+  font-size: 11px;
+  line-height: 1.5;
+  margin: 4px 0 0 0;
+}
+
+.food-price {
+  color: #ff2b2b;
+  font-weight: 900;
+  font-size: 16px;
+}
+
+.btn-add {
+  background-color: #ff2b2b;
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  min-height: 42px;
+  padding: 0 16px;
+  font-weight: 700;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-add:active {
+  transform: scale(0.95);
+  background-color: #e02424;
+}
+
+.btn-customize {
+  background-color: #f4f2ec;
+  color: #27272a;
+  border: 1px solid #e4e0d6;
+  border-radius: 12px;
+  min-height: 42px;
+  padding: 0 14px;
+  font-weight: 700;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+/* ============================================================
+   Special Offers (العروض الخاصة) - Luxury Dynamic Design
+   ============================================================ */
+@keyframes offer-pulse-glow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 43, 43, 0.4), 0 8px 24px -4px rgba(255, 43, 43, 0.2);
+  }
+
+  70% {
+    box-shadow: 0 0 0 10px rgba(255, 43, 43, 0), 0 8px 24px -4px rgba(255, 43, 43, 0.2);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 43, 43, 0), 0 8px 24px -4px rgba(255, 43, 43, 0.2);
+  }
+}
+
+@keyframes offer-shimmer {
+  0% {
+    transform: translateX(-150%) skewX(-25deg);
+  }
+
+  20% {
+    transform: translateX(250%) skewX(-25deg);
+  }
+
+  100% {
+    transform: translateX(250%) skewX(-25deg);
+  }
+}
+
+.special-offer-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  border: 1.5px solid rgba(255, 69, 0, 0.35);
+  animation: offer-pulse-glow 2.5s infinite ease-in-out;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease, box-shadow 0.25s ease;
+  background-color: #1c1917;
+  scroll-snap-align: center;
+}
+
+.special-offer-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(255, 43, 43, 0.85);
+}
+
+.special-offer-shimmer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(to right,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.35) 50%,
+      rgba(255, 255, 255, 0) 100%);
+  animation: offer-shimmer 3.8s infinite ease-in-out;
+  pointer-events: none;
+  z-index: 15;
+}
