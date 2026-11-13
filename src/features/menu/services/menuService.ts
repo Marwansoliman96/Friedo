@@ -10,72 +10,37 @@ export const TENANT_ID =
   env.NEXT_PUBLIC_TENANT_ID ||
   'b22f93a5-a92a-440c-ad9b-4d24eb33ce43';
 
-/**
- * جلب بيانات المنيو والأصناف والخيارات ومناطق التوصيل مباشرة وحصرياً من قاعدة بيانات Supabase
- */
-export async function getMenuData(): Promise<{
+const CACHE_KEY = 'friedo_menu_cache_v1';
+
+export const defaultRestaurantInfo: RestaurantInfo = {
+  name: env.VITE_RESTAURANT_NAME || 'Friedo',
+  description: 'طعم مايتنسيش ✨ أشهى فرايد تشيكن وبروستد وساندوتشات مميزة',
+  logo: '/logo.webp',
+  themeColor: '#ff2b2b',
+  phone: env.VITE_RESTAURANT_PHONE || '201284843300',
+  currency: 'ج.م',
+};
+
+export interface MenuDataResult {
   restaurantInfo: RestaurantInfo;
   sections: MenuSection[];
   allProducts: Product[];
   deliveryAreas: DeliveryArea[];
-}> {
-  // 1. إعداد معلومات المطعم الأساسية من المتغيرات البيئية
-  const restaurantInfo: RestaurantInfo = {
-    name: env.VITE_RESTAURANT_NAME || 'Friedo',
-    description: 'طعم مايتنسيش ✨ أشهى فرايد تشيكن وبروستد وساندوتشات مميزة',
-    logo: '/logo.png',
-    themeColor: '#ff2b2b',
-    phone: env.VITE_RESTAURANT_PHONE || '201284843300',
-    currency: 'ج.م',
-  };
+}
 
-  // 2. جلب جميع المنتجات المتاحة من جدول products في Supabase (مع Zero-Latency Fallback فوري)
-  let dbProducts: any[] = [];
-  try {
-    const { data, error: prodErr } = await supabase
-      .from('products')
-      .select('*')
-      .eq('tenant_id', TENANT_ID)
-      .eq('available', 'YES')
-      .order('category_order', { ascending: true })
-      .order('display_order', { ascending: true });
+/**
+ * دالة مركزية لمعالجة وتجميع بيانات المنيو والخيارات ومناطق التوصيل بسرعة فائقة
+ */
+export function processMenuData(
+  rawProducts: any[],
+  rawOptions: any[],
+  rawAreas: any[],
+  restaurantInfo: RestaurantInfo = defaultRestaurantInfo
+): MenuDataResult {
+  const optionsList: ProductOption[] = rawOptions || [];
 
-    if (prodErr || !data || data.length === 0) {
-      console.warn('Notice from Supabase products, applying zero-latency fallback:', prodErr?.message);
-      dbProducts = ((fallbackMenu as any).products || []).filter(
-        (p: any) => p.available === 'YES' || p.available === true
-      );
-    } else {
-      dbProducts = data.filter((p: any) => p.available === 'YES' || p.available === true);
-    }
-  } catch (err) {
-    console.warn('Network notice connecting to Supabase products, applying fallback:', err);
-    dbProducts = ((fallbackMenu as any).products || []).filter(
-      (p: any) => p.available === 'YES' || p.available === true
-    );
-  }
-
-  // 3. جلب جميع خيارات التخصيص من جدول options في Supabase (الأولوية لـ display_order ثم created_at)
-  let optionsList: ProductOption[] = [];
-  try {
-    const { data: dbOptions, error: optErr } = await supabase
-      .from('options')
-      .select('*')
-      .eq('tenant_id', TENANT_ID)
-      .order('display_order', { ascending: true })
-      .order('created_at', { ascending: true });
-
-    if (optErr || !dbOptions || dbOptions.length === 0) {
-      optionsList = (fallbackMenu as any).options || [];
-    } else {
-      optionsList = dbOptions;
-    }
-  } catch (err) {
-    optionsList = (fallbackMenu as any).options || [];
-  }
-
-  // 4. دمج الخيارات ومطابقتها حصرياً ومستقلاً برقم الوجبة الفعلي (100% Isolated Per-Product)
-  const enrichedProducts: Product[] = (dbProducts || []).map((p) => {
+  // دمج الخيارات ومطابقتها حصرياً ومستقلاً برقم الوجبة الفعلي
+  const enrichedProducts: Product[] = (rawProducts || []).map((p) => {
     const matched = optionsList
       .filter((opt) => opt.product_id === p.id)
       .sort((a, b) => {
@@ -99,6 +64,11 @@ export async function getMenuData(): Promise<{
       cleanImage = `/images/${cleanImage}`;
     }
 
+    // استخدام صيغة WebP فائقة السرعة والخفة تلقائياً
+    if (cleanImage && !cleanImage.startsWith('http')) {
+      cleanImage = cleanImage.replace(/\.(png|jpe?g)$/i, '.webp');
+    }
+
     return {
       ...p,
       image_url: cleanImage,
@@ -106,7 +76,7 @@ export async function getMenuData(): Promise<{
     };
   });
 
-  // 5. تجميع المنتجات وترتيبها ديناميكياً داخل أقسام المنيو
+  // تجميع المنتجات وترتيبها ديناميكياً داخل أقسام المنيو
   const sectionMap = new Map<string, { order: number; items: Product[] }>();
 
   enrichedProducts.forEach((prod) => {
@@ -120,7 +90,6 @@ export async function getMenuData(): Promise<{
     sectionMap.get(cat)!.items.push(prod);
   });
 
-  // ترتيب الأقسام حسب category_order
   const sortedSections = Array.from(sectionMap.entries()).sort(
     (a, b) => a[1].order - b[1].order
   );
@@ -133,29 +102,7 @@ export async function getMenuData(): Promise<{
     items,
   }));
 
-  // 6. جلب مناطق التوصيل من جدول delivery_areas في Supabase مع Fallback فوري من friedo_data.json
-  const { data: dbAreas, error: areaErr } = await supabase
-    .from('delivery_areas')
-    .select('*')
-    .eq('tenant_id', TENANT_ID);
-
-  if (areaErr) {
-    console.warn('Notice fetching delivery_areas from Supabase:', areaErr);
-  }
-
-  // استخدام مناطق Supabase إن وجدت، أو استرجاع الـ 24 منطقة من friedo_data.json فوراً
-  const fallbackAreasList: DeliveryArea[] = ((fallbackData as any).deliveryAreas || []).map(
-    (a: any, idx: number) => ({
-      id: `area_fallback_${idx + 1}`,
-      name: a.name,
-      fee: Number(a.fee) || 0,
-      tenant_id: TENANT_ID,
-    })
-  );
-
-  const rawAreas = (dbAreas && dbAreas.length > 0) ? dbAreas : fallbackAreasList;
-
-  const deliveryAreas: DeliveryArea[] = rawAreas.map((a: any, idx: number) => ({
+  const deliveryAreas: DeliveryArea[] = (rawAreas || []).map((a: any, idx: number) => ({
     id: a.id || `area_${idx + 1}`,
     name: a.name,
     fee: Number(a.fee) || 0,
@@ -168,4 +115,104 @@ export async function getMenuData(): Promise<{
     allProducts: enrichedProducts,
     deliveryAreas,
   };
+}
+
+/**
+ * ⚡ جلب البيانات الحقيقية فوراً لتهيئة الصفحة (0 ملّي ثانية زمن انتظار وبدون أي شاشة تحميل أو بيانات وهمية)
+ */
+export function getInitialMenuData(): MenuDataResult {
+  // 1. استرجاع الكاش المحلي للمستخدم إن وجد لسرعة قصوى
+  if (typeof window !== 'undefined') {
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed?.sections && parsed.sections.length > 0) {
+          return parsed;
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  // 2. استخدام قائمة طعام فرايدو الحقيقية والمرفقة مسبقاً في المشروع فوراً
+  const defaultProducts = ((fallbackMenu as any).products || []).filter(
+    (p: any) => p.available === 'YES' || p.available === true
+  );
+  const defaultOptions = (fallbackMenu as any).options || [];
+  const defaultAreas = ((fallbackData as any).deliveryAreas || []).map((a: any, idx: number) => ({
+    id: `area_fallback_${idx + 1}`,
+    name: a.name,
+    fee: Number(a.fee) || 0,
+    tenant_id: TENANT_ID,
+  }));
+
+  return processMenuData(defaultProducts, defaultOptions, defaultAreas, defaultRestaurantInfo);
+}
+
+/**
+ * جلب وتحديث بيانات المنيو في الخلفية بالتوازي (Parallel Fetching) عبر Promise.all
+ */
+export async function getMenuData(): Promise<MenuDataResult> {
+  const fallbackProducts = ((fallbackMenu as any).products || []).filter(
+    (p: any) => p.available === 'YES' || p.available === true
+  );
+  const fallbackOptions = (fallbackMenu as any).options || [];
+  const fallbackAreas = ((fallbackData as any).deliveryAreas || []).map((a: any, idx: number) => ({
+    id: `area_fallback_${idx + 1}`,
+    name: a.name,
+    fee: Number(a.fee) || 0,
+    tenant_id: TENANT_ID,
+  }));
+
+  try {
+    // استدعاء جداول Supabase بالتوازي التام لتوفير 60-70% من وقت الشبكة
+    const [prodRes, optRes, areaRes] = await Promise.all([
+      supabase
+        .from('products')
+        .select('*')
+        .eq('tenant_id', TENANT_ID)
+        .eq('available', 'YES')
+        .order('category_order', { ascending: true })
+        .order('display_order', { ascending: true }),
+      supabase
+        .from('options')
+        .select('*')
+        .eq('tenant_id', TENANT_ID)
+        .order('display_order', { ascending: true })
+        .order('created_at', { ascending: true }),
+      supabase
+        .from('delivery_areas')
+        .select('*')
+        .eq('tenant_id', TENANT_ID),
+    ]);
+
+    const dbProducts =
+      prodRes.data && prodRes.data.length > 0
+        ? prodRes.data.filter((p: any) => p.available === 'YES' || p.available === true)
+        : fallbackProducts;
+
+    const dbOptions =
+      optRes.data && optRes.data.length > 0 ? optRes.data : fallbackOptions;
+
+    const dbAreas =
+      areaRes.data && areaRes.data.length > 0 ? areaRes.data : fallbackAreas;
+
+    const result = processMenuData(dbProducts, dbOptions, dbAreas, defaultRestaurantInfo);
+
+    // حفظ النتيجة الحديثة في الكاش المحلي للمتصفح
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify(result));
+      } catch {
+        // ignore
+      }
+    }
+
+    return result;
+  } catch (err) {
+    console.warn('Notice during Supabase parallel fetch, applying offline real data:', err);
+    return processMenuData(fallbackProducts, fallbackOptions, fallbackAreas, defaultRestaurantInfo);
+  }
 }

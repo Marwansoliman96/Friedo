@@ -7,7 +7,7 @@
       "category": "عروض المدارس",
       "description": "6 قطع بروستد + 2 صوص رئيسي (ثومية/كولسلو) + 2 صوص إضافي + 3 خبز + بطاطس",
       "base_price": 320,
-      "image_url": "/images/fried.jpeg",
+      "image_url": "/images/fried.webp",
       "available": "YES",
       "category_order": 1,
       "display_order": 2
@@ -18,7 +18,7 @@
       "category": "عروض المدارس",
       "description": "2 قطعة بروستد + 2 قطعة ستريبس + صوص ثومية/كولسلو + صوص جانبي + بطاطس + 2 عيش",
       "base_price": 170,
-      "image_url": "/images/twfer.jpeg",
+      "image_url": "/images/twfer.webp",
       "available": "YES",
       "category_order": 1,
       "display_order": 1
@@ -29,7 +29,7 @@
       "category": "عروض المدارس",
       "description": "12 قطعة بروستد + 3 صوص ثومية/كولسلو + 3 صوص جانبي + بطاطس + 6 عيش",
       "base_price": 620,
-      "image_url": "/images/family.jpeg",
+      "image_url": "/images/family.webp",
       "available": "YES",
       "category_order": 1,
       "display_order": 3
@@ -40,7 +40,7 @@
       "category": "الوجبات",
       "description": "نصف فرخة بروستد + بطاطس + 2 خبز + كول سلو + صوص",
       "base_price": 220,
-      "image_url": "/images/friedomeal.jpg",
+      "image_url": "/images/friedomeal.webp",
       "available": "YES",
       "category_order": 2,
       "display_order": 1
@@ -51,7 +51,7 @@
       "category": "الوجبات",
       "description": "ربع فرخة بروستد + بطاطس + خبز + كول سلو + صوص",
       "base_price": 125,
-      "image_url": "/images/snk.jpg",
+      "image_url": "/images/snk.webp",
       "available": "YES",
       "category_order": 2,
       "display_order": 2
@@ -62,7 +62,7 @@
       "category": "الوجبات",
       "description": "فرخة كاملة بروستد + بطاطس + 4 خبز + كول سلو",
       "base_price": 425,
-      "image_url": "/images/fullchk.jpg",
+      "image_url": "/images/fullchk.webp",
       "available": "YES",
       "category_order": 2,
       "display_order": 3
@@ -73,7 +73,7 @@
       "category": "الوجبات",
       "description": "نصف فرخة بروستد + 2 استريبس + بطاطس + خبز",
       "base_price": 295,
-      "image_url": "/images/mix.jpg",
+      "image_url": "/images/mix.webp",
       "available": "YES",
       "category_order": 2,
       "display_order": 4
@@ -84,7 +84,7 @@
       "category": "الوجبات",
       "description": "2 استريبس + بطاطس + عصير + لعبة أطفال",
       "base_price": 120,
-      "image_url": "/images/hpy.jpg",
+      "image_url": "/images/hpy.webp",
       "available": "YES",
       "category_order": 2,
       "display_order": 5
@@ -95,7 +95,7 @@
       "category": "الوجبات",
       "description": "بطاطس مغطاة بقطع الدجاج المقرمش والصوص",
       "base_price": 114,
-      "image_url": "/images/chkf.jpg",
+      "image_url": "/images/chkf.webp",
       "available": "YES",
       "category_order": 2,
       "display_order": 6
@@ -106,7 +106,7 @@
       "category": "وجبات الاستربيس",
       "description": "3 قطع دجاج استريبس + صوص",
       "base_price": 125,
-      "image_url": "/images/strp.jpg",
+      "image_url": "/images/strp.webp",
       "available": "YES",
       "category_order": 3,
       "display_order": 1
@@ -117,7 +117,7 @@
       "category": "وجبات الاستربيس",
       "description": "5 قطع دجاج استريبس + صوص",
       "base_price": 215,
-      "image_url": "/images/5strp.jpg",
+      "image_url": "/images/5strp.webp",
       "available": "YES",
       "category_order": 3,
       "display_order": 2
@@ -128,7 +128,7 @@
       "category": "Light Meals",
       "description": "أرز بسمتي + قطع دجاج + صوص من اختيارك",
       "base_price": 135,
-      "image_url": "/images/fth.jpg",
+      "image_url": "/images/fth.webp",
       "available": "YES",
       "category_order": 4,
       "display_order": 1
@@ -139,7 +139,7 @@
       "category": "Light Meals",
       "description": "أرز بسمتي + قطع دجاج + صوص من اختيارك",
       "base_price": 170,
-      "image_url": "/images/fthpromax.jpg",
+      "image_url": "/images/fthpromax.webp",
       "available": "YES",
       "category_order": 4,
       "display_order": 2
@@ -150,7 +150,7 @@
       "category": "Light Meals",
       "description": "مكعبات دجاج مقلي",
       "base_price": 99,
-      "image_url": "/images/pop.jpg",
+      "image_url": "/images/pop.webp",
       "available": "YES",
       "category_order": 4,
       "display_order": 3
@@ -161,7 +161,7 @@
       "category": "مقبلات",
       "description": "مقرمشة ومتبلة",
       "base_price": 25,
-      "image_url": "/images/fries.png",
+      "image_url": "/images/fries.webp",
       "available": "YES",
       "category_order": 5,
       "display_order": 1
@@ -172,7 +172,7 @@
       "category": "مقبلات",
       "description": "بطاطس حجم كبير",
       "base_price": 40,
-      "image_url": "/images/fries.png",
+      "image_url": "/images/fries.webp",
       "available": "YES",
       "category_order": 5,
       "display_order": 2
@@ -183,7 +183,7 @@
       "category": "مقبلات",
       "description": "بطاطس بصوص الجبنة",
       "base_price": 60,
-      "image_url": "/images/chesefries.png",
+      "image_url": "/images/chesefries.webp",
       "available": "YES",
       "category_order": 5,
       "display_order": 3
@@ -194,7 +194,7 @@
       "category": "مقبلات",
       "description": "4 قطع",
       "base_price": 62,
-      "image_url": "/images/stks.png",
+      "image_url": "/images/stks.webp",
       "available": "YES",
       "category_order": 5,
       "display_order": 4
@@ -205,7 +205,7 @@
       "category": "مقبلات",
       "description": "5 قطع",
       "base_price": 58,
-      "image_url": "/images/onion.png",
+      "image_url": "/images/onion.webp",
       "available": "YES",
       "category_order": 5,
       "display_order": 5
@@ -216,7 +216,7 @@
       "category": "ساندوتشات فرايدو",
       "description": "صوص التيكساس + قطع دجاج + خس + شيدر",
       "base_price": 130,
-      "image_url": "/images/rnd.jpg",
+      "image_url": "/images/rnd.webp",
       "available": "YES",
       "category_order": 6,
       "display_order": 1
@@ -227,7 +227,7 @@
       "category": "ساندوتشات فرايدو",
       "description": "نسخة أكبر بقطع دجاج إضافية وصوص مميز",
       "base_price": 175,
-      "image_url": "/images/rnd1.jpg",
+      "image_url": "/images/rnd1.webp",
       "available": "YES",
       "category_order": 6,
       "display_order": 2
@@ -238,7 +238,7 @@
       "category": "ساندوتشات فرايدو",
       "description": "أكبر حجم لعشاق الدجاج المقرمش",
       "base_price": 200,
-      "image_url": "/images/rnd3.jpg",
+      "image_url": "/images/rnd3.webp",
       "available": "YES",
       "category_order": 6,
       "display_order": 3
@@ -249,7 +249,7 @@
       "category": "ساندوتشات فرايدو",
       "description": "صوص تيكساس + قطع دجاج + رومي مدخن",
       "base_price": 160,
-      "image_url": "/images/lng1.jpg",
+      "image_url": "/images/lng1.webp",
       "available": "YES",
       "category_order": 6,
       "display_order": 4
@@ -260,7 +260,7 @@
       "category": "ساندوتشات فرايدو",
       "description": "اختيارك من صوص التيكساس أو الرانش + دجاج + رومي مدخن + موتزاريلا ستيكس او حلقات البصل",
       "base_price": 160,
-      "image_url": "/images/lng2.png",
+      "image_url": "/images/lng2.webp",
       "available": "YES",
       "category_order": 6,
       "display_order": 5
@@ -271,7 +271,7 @@
       "category": "إضافات جانبية",
       "description": " أرز حجم عادي ",
       "base_price": 30,
-      "image_url": "/images/rice.png",
+      "image_url": "/images/rice.webp",
       "available": "YES",
       "category_order": 7,
       "display_order": 1
@@ -282,7 +282,7 @@
       "category": "إضافات جانبية",
       "description": "أرز حجم كبير",
       "base_price": 40,
-      "image_url": "/images/rice.png",
+      "image_url": "/images/rice.webp",
       "available": "YES",
       "category_order": 7,
       "display_order": 2
@@ -293,7 +293,7 @@
       "category": "إضافات جانبية",
       "description": "اي نوع صوص إضافي",
       "base_price": 35,
-      "image_url": "/images/suae.png",
+      "image_url": "/images/suae.webp",
       "available": "YES",
       "category_order": 7,
       "display_order": 3
@@ -304,7 +304,7 @@
       "category": "إضافات جانبية",
       "description": "4 قطع خبز",
       "base_price": 14,
-      "image_url": "/images/bread.png",
+      "image_url": "/images/bread.webp",
       "available": "YES",
       "category_order": 7,
       "display_order": 4
@@ -315,7 +315,7 @@
       "category": "إضافات جانبية",
       "description": "صوص جبنة",
       "base_price": 40,
-      "image_url": "/images/cheese.png",
+      "image_url": "/images/cheese.webp",
       "available": "YES",
       "category_order": 7,
       "display_order": 5
@@ -326,7 +326,7 @@
       "category": "إضافات جانبية",
       "description": "قطعة استريبس إضافية",
       "base_price": 35,
-      "image_url": "/images/strips.png",
+      "image_url": "/images/strips.webp",
       "available": "YES",
       "category_order": 7,
       "display_order": 6
@@ -337,7 +337,7 @@
       "category": "إضافات جانبية",
       "description": "شرائح هالبينو",
       "base_price": 25,
-      "image_url": "/images/jlp.png",
+      "image_url": "/images/jlp.webp",
       "available": "YES",
       "category_order": 7,
       "display_order": 7
@@ -348,7 +348,7 @@
       "category": "إضافات جانبية",
       "description": "رومي مدخن",
       "base_price": 25,
-      "image_url": "/images/trk.png",
+      "image_url": "/images/trk.webp",
       "available": "YES",
       "category_order": 7,
       "display_order": 8
@@ -359,7 +359,7 @@
       "category": "إضافات جانبية",
       "description": "إضافة كومبو",
       "base_price": 50,
-      "image_url": "/images/cmb.png",
+      "image_url": "/images/cmb.webp",
       "available": "YES",
       "category_order": 7,
       "display_order": 9
@@ -370,7 +370,7 @@
       "category": "إضافات جانبية",
       "description": "مياه معدنية",
       "base_price": 12,
-      "image_url": "/images/wtr.png",
+      "image_url": "/images/wtr.webp",
       "available": "YES",
       "category_order": 7,
       "display_order": 10
@@ -381,7 +381,7 @@
       "category": "إضافات جانبية",
       "description": "مشروب غازي",
       "base_price": 23,
-      "image_url": "/images/soda.png",
+      "image_url": "/images/soda.webp",
       "available": "YES",
       "category_order": 7,
       "display_order": 11
