@@ -121,7 +121,14 @@ export function processMenuData(
  * ⚡ جلب البيانات الحقيقية فوراً لتهيئة الصفحة (0 ملّي ثانية زمن انتظار وبدون أي شاشة تحميل أو بيانات وهمية)
  */
 export function getInitialMenuData(): MenuDataResult {
-  // 1. استرجاع الكاش المحلي للمستخدم إن وجد لسرعة قصوى
+  // 1. تنظيف أي نسخ كاش قديمة من v1 لضمان ظهور النصوص والصور الجديدة فوراً
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.removeItem('friedo_menu_cache_v1');
+    } catch {}
+  }
+
+  // 2. استرجاع الكاش المحلي للمستخدم إن وجد لسرعة قصوى
   if (typeof window !== 'undefined') {
     try {
       const cached = localStorage.getItem(CACHE_KEY);
