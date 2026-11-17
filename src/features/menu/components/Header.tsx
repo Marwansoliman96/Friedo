@@ -38,7 +38,7 @@ export const Header: React.FC<HeaderProps> = ({ restaurantInfo }) => {
               </span>
             </div>
             <p className="text-[11px] text-stone-500 font-medium line-clamp-1">
-              أفضل فرايد تشيكن وبروستد مقرمش
+              {restaurantInfo.description || 'طعم مايتنسيش!'}
             </p>
           </div>
         </div>

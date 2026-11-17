@@ -10,11 +10,11 @@ export const TENANT_ID =
   env.NEXT_PUBLIC_TENANT_ID ||
   'b22f93a5-a92a-440c-ad9b-4d24eb33ce43';
 
-const CACHE_KEY = 'friedo_menu_cache_v1';
+const CACHE_KEY = 'friedo_menu_cache_v2';
 
 export const defaultRestaurantInfo: RestaurantInfo = {
   name: env.VITE_RESTAURANT_NAME || 'Friedo',
-  description: 'طعم مايتنسيش ✨ أشهى فرايد تشيكن وبروستد وساندوتشات مميزة',
+  description: 'طعم مايتنسيش!',
   logo: '/logo.webp',
   themeColor: '#ff2b2b',
   phone: env.VITE_RESTAURANT_PHONE || '201284843300',
