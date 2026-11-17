@@ -18,7 +18,7 @@ export const HeroBanner: React.FC = () => {
           </h2>
 
           <p className="text-xs sm:text-sm text-stone-600 leading-relaxed max-w-xl">
-            اطلب أونلاين واستمتع بأقوى العروض والوجبات وساندوتشات البروستد والفرايد تشيكن، توصيل سريع وسخن لحد باب بيتك!
+            أنت الآن على موعد مع أفضل تجربة فرايد تشيكن على الإطلاق
           </p>
 
           <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px] text-stone-600 font-medium">
