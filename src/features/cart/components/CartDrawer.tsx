@@ -102,22 +102,22 @@ export const CartDrawer: React.FC = () => {
                   <div className="flex items-center gap-1.5 bg-stone-100 border border-stone-200/90 rounded-xl p-1 shadow-inner">
                     <button
                       type="button"
-                      onClick={() => updateQuantity(item.id, -1)}
-                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white border border-stone-200/80 text-stone-700 hover:text-red-600 hover:border-red-200 flex items-center justify-center active:scale-90 transition-all shadow-xs cursor-pointer"
-                      aria-label="تقليل الكمية"
+                      onClick={() => updateQuantity(item.id, 1)}
+                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-red-600 hover:bg-red-500 text-white flex items-center justify-center active:scale-90 transition-all shadow-xs cursor-pointer"
+                      aria-label="زيادة الكمية"
                     >
-                      <Minus className="w-3.5 h-3.5 stroke-[2.5]" />
+                      <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
                     </button>
                     <span className="min-w-[22px] text-center text-xs sm:text-sm font-black text-stone-900 select-none">
                       {item.quantity}
                     </span>
                     <button
                       type="button"
-                      onClick={() => updateQuantity(item.id, 1)}
-                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-red-600 hover:bg-red-500 text-white flex items-center justify-center active:scale-90 transition-all shadow-xs cursor-pointer"
-                      aria-label="زيادة الكمية"
+                      onClick={() => updateQuantity(item.id, -1)}
+                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white border border-stone-200/80 text-stone-700 hover:text-red-600 hover:border-red-200 flex items-center justify-center active:scale-90 transition-all shadow-xs cursor-pointer"
+                      aria-label="تقليل الكمية"
                     >
-                      <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                      <Minus className="w-3.5 h-3.5 stroke-[2.5]" />
                     </button>
                   </div>
                   <button
