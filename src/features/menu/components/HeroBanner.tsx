@@ -3,7 +3,11 @@
 import React from 'react';
 import { Flame, Sparkles, Bike, ShieldCheck } from 'lucide-react';
 
-export const HeroBanner: React.FC = () => {
+interface HeroBannerProps {
+  onOpenDeliveryAreas?: () => void;
+}
+
+export const HeroBanner: React.FC<HeroBannerProps> = ({ onOpenDeliveryAreas }) => {
   return (
     <section className="relative overflow-hidden pt-4 pb-2 px-4 max-w-4xl mx-auto">
       <div className="relative rounded-3xl bg-gradient-to-br from-red-50 via-amber-50/40 to-orange-50/30 border border-red-100/80 p-4 sm:p-6 overflow-hidden shadow-sm">
@@ -33,10 +37,15 @@ export const HeroBanner: React.FC = () => {
               <Flame className="w-3.5 h-3.5 fill-white" />
               <span>استكشف عروض التوفير</span>
             </button>
-            <span className="flex items-center gap-1 bg-white/90 px-2.5 py-1.5 rounded-xl border border-stone-200/80 shadow-2xs">
+            <button
+              type="button"
+              onClick={onOpenDeliveryAreas}
+              className="flex items-center gap-1 bg-white/90 hover:bg-white hover:border-red-300 px-2.5 py-1.5 rounded-xl border border-stone-200/80 shadow-2xs active:scale-95 transition-all cursor-pointer"
+              title="عرض مناطق وأسعار التوصيل"
+            >
               <Bike className="w-3.5 h-3.5 text-[#ff2b2b]" />
-              توصيل لجميع المناطق
-            </span>
+              <span>توصيل لجميع المناطق</span>
+            </button>
             <span className="flex items-center gap-1 bg-white/90 px-2.5 py-1.5 rounded-xl border border-stone-200/80 shadow-2xs">
               <Sparkles className="w-3.5 h-3.5 text-amber-500" />
               أعلى جودة وأفضل سعر

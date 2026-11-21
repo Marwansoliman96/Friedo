@@ -7,6 +7,7 @@ import { CategoryBar } from './CategoryBar';
 import { ProductCard } from './ProductCard';
 import { SpecialOffersSection } from './SpecialOffersSection';
 import { OptionSelectorModal } from './OptionSelectorModal';
+import { DeliveryAreasModal } from './DeliveryAreasModal';
 import { FloatingCartBar } from '@/features/cart/components/FloatingCartBar';
 import { CartDrawer } from '@/features/cart/components/CartDrawer';
 import { CheckoutModal } from '@/features/checkout/components/CheckoutModal';
@@ -28,6 +29,7 @@ export const MenuClientShell: React.FC<MenuClientShellProps> = ({
     sections.length > 0 ? sections[0].id : ''
   );
   const [searchQuery, setSearchQuery] = useState('');
+  const [isAreasModalOpen, setAreasModalOpen] = useState(false);
 
   const isManualScrollingRef = useRef(false);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -158,7 +160,7 @@ export const MenuClientShell: React.FC<MenuClientShellProps> = ({
     <div className="min-h-screen bg-[#fffdf7] text-stone-900 flex flex-col font-sans pb-36">
       <Header restaurantInfo={restaurantInfo} />
 
-      {!searchQuery && <HeroBanner />}
+      {!searchQuery && <HeroBanner onOpenDeliveryAreas={() => setAreasModalOpen(true)} />}
 
       <CategoryBar
         sections={sections}
@@ -208,6 +210,11 @@ export const MenuClientShell: React.FC<MenuClientShellProps> = ({
       </main>
 
       <OptionSelectorModal />
+      <DeliveryAreasModal
+        isOpen={isAreasModalOpen}
+        onClose={() => setAreasModalOpen(false)}
+        deliveryAreas={deliveryAreas}
+      />
       <FloatingCartBar />
       <CartDrawer />
       <CheckoutModal deliveryAreas={deliveryAreas} restaurantInfo={restaurantInfo} />

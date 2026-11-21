@@ -93,8 +93,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [customerPhone, setCustomerPhone] = useState('');
   const [selectedArea, setSelectedArea] = useState<DeliveryArea | null>(null);
 
-  // مزامنة المنطقة المختارة تلقائياً واسترجاع بيانات العميل المحفوظة مسبقاً
+  // استرجاع بيانات العميل والمنطقة المحفوظة مسبقاً فقط (دون فرض منطقة افتراضية على العميل الجديد)
   useEffect(() => {
+    if (!isCheckoutOpen) return;
     try {
       const saved = localStorage.getItem('friedo_customer_v1');
       if (saved) {
@@ -103,22 +104,17 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         if (data.phone && !customerPhone) setCustomerPhone(normalizeEnglishPhone(String(data.phone)));
         if (data.address && !addressDetails) setAddressDetails(data.address);
         if (data.orderType) setOrderType(data.orderType);
-        if (data.area && activeAreas.length > 0) {
+        if (data.area && activeAreas.length > 0 && !selectedArea) {
           const matchedArea = activeAreas.find((a) => a.name === data.area);
           if (matchedArea) {
             setSelectedArea(matchedArea);
-            return;
           }
         }
       }
     } catch {
       // ignore
     }
-
-    if (!selectedArea && activeAreas.length > 0) {
-      setSelectedArea(activeAreas[0]);
-    }
-  }, [activeAreas, selectedArea]);
+  }, [activeAreas, isCheckoutOpen]);
 
   const [addressDetails, setAddressDetails] = useState('');
   const [notes, setNotes] = useState('');
@@ -548,19 +544,22 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         ref={areaSelectRef}
                         value={selectedArea?.name || ''}
                         onChange={(e) => {
-                          const area = activeAreas.find((a) => a.name === e.target.value);
-                          if (area) setSelectedArea(area);
+                          const area = activeAreas.find((a) => a.name === e.target.value) || null;
+                          setSelectedArea(area);
                           if (invalidField === 'area') {
                             setInvalidField(null);
                             setErrorMsg('');
                           }
                         }}
-                        className={`w-full bg-stone-50 border rounded-xl px-3.5 py-2.5 text-xs font-bold text-stone-900 focus:outline-none focus:bg-white shadow-2xs cursor-pointer appearance-none pl-9 transition-all ${
+                        className={`w-full bg-stone-50 border rounded-xl px-3.5 py-2.5 text-xs font-bold focus:outline-none focus:bg-white shadow-2xs cursor-pointer appearance-none pl-9 transition-all ${
+                          !selectedArea ? 'text-stone-400' : 'text-stone-900'
+                        } ${
                           invalidField === 'area'
                             ? 'border-red-500 ring-2 ring-red-500/30 bg-red-50/30 animate-pulse'
                             : 'border-stone-200 focus:border-red-500'
                         }`}
                       >
+                        <option value="">— اختر منطقة التوصيل —</option>
                         {activeAreas.map((a) => (
                           <option key={a.id || a.name} value={a.name}>
                             📍 {a.name} — ({a.fee} ج.م توصيل)
@@ -621,8 +620,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               </div>
               {orderType === 'delivery' && (
                 <div className="flex justify-between text-stone-600 font-medium">
-                  <span>رسوم التوصيل ({selectedArea?.name || ''})</span>
-                  <span className="font-bold text-red-600">+{deliveryFee} ج.م</span>
+                  <span>
+                    رسوم التوصيل{selectedArea ? ` (${selectedArea.name})` : ''}
+                  </span>
+                  {selectedArea ? (
+                    <span className="font-bold text-red-600">+{deliveryFee} ج.م</span>
+                  ) : (
+                    <span className="font-bold text-stone-400">تُحدد باختيار المنطقة</span>
+                  )}
                 </div>
               )}
               <div className="flex justify-between font-black text-sm text-stone-900 pt-2 border-t border-stone-200">
