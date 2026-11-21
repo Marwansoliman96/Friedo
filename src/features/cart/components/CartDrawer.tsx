@@ -46,10 +46,12 @@ export const CartDrawer: React.FC = () => {
               </button>
             )}
             <button
+              type="button"
               onClick={() => setCartOpen(false)}
-              className="w-8 h-8 rounded-full bg-stone-100 text-stone-500 hover:text-stone-900 flex items-center justify-center active:scale-90"
+              className="w-10 h-10 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-600 hover:text-stone-900 flex items-center justify-center active:scale-90 transition-all cursor-pointer shadow-2xs"
+              aria-label="إغلاق السلة"
             >
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5 stroke-[2.2]" />
             </button>
           </div>
         </div>

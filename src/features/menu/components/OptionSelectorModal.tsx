@@ -386,10 +386,18 @@ export const OptionSelectorModal: React.FC = () => {
   if (!product) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-stone-950/70 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="relative w-full sm:max-w-lg max-h-[92vh] bg-white border border-stone-200/90 rounded-t-3xl sm:rounded-3xl flex flex-col overflow-hidden shadow-2xl">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) closeOptionsModal();
+      }}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-stone-950/70 backdrop-blur-xs animate-in fade-in duration-200"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full sm:max-w-lg max-h-[92vh] bg-white border border-stone-200/90 rounded-t-3xl sm:rounded-3xl flex flex-col overflow-hidden shadow-2xl"
+      >
         {/* رأس المودال مع صورة الصنف والاسم */}
-        <div className="relative p-4 border-b border-stone-100 flex items-center justify-between bg-stone-50/50">
+        <div className="relative px-4 py-3 border-b border-stone-100 flex items-center justify-between bg-stone-50/50">
           <div className="flex items-center gap-3 min-w-0">
             {product.image_url ? (
               <div className="relative w-14 h-14 rounded-2xl overflow-hidden bg-stone-100 shrink-0 border border-stone-200/80 shadow-xs">
@@ -408,11 +416,12 @@ export const OptionSelectorModal: React.FC = () => {
             </div>
           </div>
           <button
+            type="button"
             onClick={closeOptionsModal}
-            className="w-8 h-8 rounded-full bg-white border border-stone-200 text-stone-500 hover:text-stone-900 flex items-center justify-center active:scale-90 transition-transform shadow-2xs"
+            className="w-11 h-11 rounded-full bg-white border border-stone-200 text-stone-600 hover:text-stone-900 flex items-center justify-center active:scale-90 transition-transform shadow-2xs cursor-pointer"
             aria-label="إغلاق"
           >
-            <X className="w-4 h-4" />
+            <X className="w-5 h-5 stroke-[2.2]" />
           </button>
         </div>
 

@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { X, Bike, Store, Send, CheckCircle2, AlertCircle, MapPin, ChevronDown } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { X, Bike, Store, Send, CheckCircle2, AlertCircle, MapPin, ChevronDown, Loader2 } from 'lucide-react';
 import { useCartStore } from '@/features/cart/store/useCartStore';
 import { supabase } from '@/shared/lib/supabase/client';
 import { TENANT_ID } from '@/features/menu/services/menuService';
@@ -13,6 +13,26 @@ import {
   openWhatsAppCheckout,
 } from '@/features/checkout/utils/whatsappMessage';
 import { sendOrderToGoogleSheetFireAndForget } from '@/features/checkout/services/googleSheetService';
+
+/**
+ * دالة حساب تاريخ يوم العمل (business_date) لظروف عمل المطعم بعد منتصف الليل
+ * إذا كانت الساعة بين 00:00 و 05:00 صباحاً، يُعتبر يوم العمل هو اليوم السابق
+ */
+const getBusinessDate = (): string => {
+  const now = new Date();
+  if (now.getHours() < 5) {
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const y = yesterday.getFullYear();
+    const m = String(yesterday.getMonth() + 1).padStart(2, '0');
+    const d = String(yesterday.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
 
 interface CheckoutModalProps {
   deliveryAreas: DeliveryArea[];
@@ -105,8 +125,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [phoneLimitWarning, setPhoneLimitWarning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [invalidField, setInvalidField] = useState<'name' | 'phone' | 'area' | 'address' | null>(null);
   const [successToken, setSuccessToken] = useState<string | null>(null);
   const [lastOrderWaUrl, setLastOrderWaUrl] = useState<string>('');
+
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const phoneInputRef = useRef<HTMLInputElement>(null);
+  const areaSelectRef = useRef<HTMLSelectElement>(null);
+  const addressInputRef = useRef<HTMLTextAreaElement>(null);
 
   // إخفاء تنبيه تجاوز الحد الأقصى لرقم الهاتف تلقائياً بعد 3.5 ثوانٍ
   useEffect(() => {
@@ -127,32 +153,50 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   // إرسال وتأكيد الطلب الموحد: تسجيل فوري في قاعدة البيانات والداشبورد + إرسال للواتساب
   const handleSubmit = async () => {
-    // التحقق من الحقول الإلزامية
+    // التحقق من الحقول الإلزامية مع التركيز التلقائي على الحقل الناقص
     if (!customerName.trim()) {
+      setInvalidField('name');
       setErrorMsg('يرجى كتابة اسمك بالكامل للمتابعة');
+      nameInputRef.current?.focus();
+      nameInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
     const cleanPhone = normalizeEnglishPhone(customerPhone);
     if (!cleanPhone) {
+      setInvalidField('phone');
       setErrorMsg('يرجى كتابة رقم هاتفك للتواصل');
+      phoneInputRef.current?.focus();
+      phoneInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
     if (!/^01[0125]/.test(cleanPhone)) {
+      setInvalidField('phone');
       setErrorMsg('رقم الهاتف يجب أن يبدأ بـ 010 أو 011 أو 012 أو 015');
+      phoneInputRef.current?.focus();
+      phoneInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
     if (cleanPhone.length !== 11) {
+      setInvalidField('phone');
       setErrorMsg('يرجى إدخال رقم هاتف مكون من 11 رقماً بالكامل');
+      phoneInputRef.current?.focus();
+      phoneInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
 
     if (orderType === 'delivery') {
       if (!selectedArea) {
+        setInvalidField('area');
         setErrorMsg('يرجى اختيار منطقة التوصيل من القائمة لتحديد رسوم التوصيل');
+        areaSelectRef.current?.focus();
+        areaSelectRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;
       }
-      if (!addressDetails.trim()) {
+      if (!addressDetails.trim() || addressDetails.trim().length < 3) {
+        setInvalidField('address');
         setErrorMsg('يرجى كتابة تفاصيل العنوان (الشارع أو العمارة أو رقم الشقة)');
+        addressInputRef.current?.focus();
+        addressInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;
       }
     }
@@ -170,6 +214,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       return;
     }
 
+    setInvalidField(null);
     setErrorMsg('');
     setIsSubmitting(true);
 
@@ -227,7 +272,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         status: 'pending',
         payment_method: 'cash',
         payment_status: 'pending',
-        business_date: new Date().toISOString().split('T')[0],
+        business_date: getBusinessDate(),
       };
 
       // إدراج الطلب مع مهلة أمان قصيرة لتفادي أي تعليق شبكة
@@ -287,16 +332,26 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-stone-50/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full sm:max-w-md max-h-[95vh] bg-white border border-stone-200 rounded-t-3xl sm:rounded-3xl flex flex-col overflow-hidden shadow-2xl">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) setCheckoutOpen(false);
+      }}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/45 backdrop-blur-xs animate-in fade-in duration-200"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full sm:max-w-md max-h-[95vh] bg-white border border-stone-200 rounded-t-3xl sm:rounded-3xl flex flex-col overflow-hidden shadow-2xl"
+      >
         {/* الهيدر */}
-        <div className="p-4 border-b border-stone-200 flex items-center justify-between">
+        <div className="px-4 py-3 border-b border-stone-200 flex items-center justify-between">
           <h3 className="text-base font-black text-stone-900">إتمام الطلب</h3>
           <button
+            type="button"
             onClick={() => setCheckoutOpen(false)}
-            className="w-8 h-8 rounded-full bg-stone-100 text-stone-500 hover:text-stone-900 flex items-center justify-center active:scale-90"
+            aria-label="إغلاق نافذة إتمام الطلب"
+            className="w-11 h-11 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-600 hover:text-stone-900 flex items-center justify-center active:scale-95 transition-all cursor-pointer shadow-2xs"
           >
-            <X className="w-4 h-4" />
+            <X className="w-5 h-5 stroke-[2.2]" />
           </button>
         </div>
 
@@ -385,11 +440,22 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <div>
                 <label className="text-xs font-bold text-stone-700 block mb-1">اسمك بالكامل *</label>
                 <input
+                  ref={nameInputRef}
                   type="text"
                   value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
+                  onChange={(e) => {
+                    setCustomerName(e.target.value);
+                    if (invalidField === 'name') {
+                      setInvalidField(null);
+                      setErrorMsg('');
+                    }
+                  }}
                   placeholder="مثال: أحمد محمد"
-                  className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2.5 text-xs text-stone-900 placeholder-zinc-600 focus:outline-none focus:border-red-500"
+                  className={`w-full bg-stone-50 border rounded-xl px-3 py-2.5 text-xs text-stone-900 placeholder-zinc-600 focus:outline-none transition-all ${
+                    invalidField === 'name'
+                      ? 'border-red-500 ring-2 ring-red-500/30 bg-red-50/30 animate-pulse'
+                      : 'border-stone-200 focus:border-red-500'
+                  }`}
                 />
               </div>
 
@@ -398,7 +464,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   <label className="text-xs font-bold text-stone-700">رقم الهاتف *</label>
                   <span
                     className={`text-[11px] font-bold tabular-nums ${
-                      hasInvalidPhonePrefix
+                      hasInvalidPhonePrefix || invalidField === 'phone'
                         ? 'text-red-600'
                         : phoneLimitWarning
                           ? 'text-amber-600'
@@ -411,6 +477,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   </span>
                 </div>
                 <input
+                  ref={phoneInputRef}
                   type="tel"
                   inputMode="numeric"
                   pattern="[0-9]*"
@@ -426,11 +493,15 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       setPhoneLimitWarning(false);
                     }
                     setCustomerPhone(rawDigits.slice(0, 11));
+                    if (invalidField === 'phone') {
+                      setInvalidField(null);
+                      setErrorMsg('');
+                    }
                   }}
                   placeholder="مثال: 01012345678"
                   className={`w-full bg-stone-50 border rounded-xl px-3 py-2.5 text-xs text-stone-900 placeholder-zinc-600 focus:outline-none text-right tabular-nums transition-colors ${
-                    hasInvalidPhonePrefix
-                      ? 'border-red-500 focus:border-red-600 bg-red-50/40'
+                    hasInvalidPhonePrefix || invalidField === 'phone'
+                      ? 'border-red-500 focus:border-red-600 bg-red-50/40 ring-2 ring-red-500/30 animate-pulse'
                       : phoneLimitWarning
                         ? 'border-amber-500 focus:border-amber-600 bg-amber-50/40'
                         : 'border-stone-200 focus:border-red-500'
@@ -474,12 +545,21 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
                     <div className="relative">
                       <select
+                        ref={areaSelectRef}
                         value={selectedArea?.name || ''}
                         onChange={(e) => {
                           const area = activeAreas.find((a) => a.name === e.target.value);
                           if (area) setSelectedArea(area);
+                          if (invalidField === 'area') {
+                            setInvalidField(null);
+                            setErrorMsg('');
+                          }
                         }}
-                        className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-stone-900 focus:outline-none focus:border-red-500 focus:bg-white shadow-2xs cursor-pointer appearance-none pl-9"
+                        className={`w-full bg-stone-50 border rounded-xl px-3.5 py-2.5 text-xs font-bold text-stone-900 focus:outline-none focus:bg-white shadow-2xs cursor-pointer appearance-none pl-9 transition-all ${
+                          invalidField === 'area'
+                            ? 'border-red-500 ring-2 ring-red-500/30 bg-red-50/30 animate-pulse'
+                            : 'border-stone-200 focus:border-red-500'
+                        }`}
                       >
                         {activeAreas.map((a) => (
                           <option key={a.id || a.name} value={a.name}>
@@ -497,11 +577,22 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   <div>
                     <label className="text-xs font-bold text-stone-700 block mb-1">العنوان التفصيلي *</label>
                     <textarea
+                      ref={addressInputRef}
                       value={addressDetails}
-                      onChange={(e) => setAddressDetails(e.target.value)}
+                      onChange={(e) => {
+                        setAddressDetails(e.target.value);
+                        if (invalidField === 'address') {
+                          setInvalidField(null);
+                          setErrorMsg('');
+                        }
+                      }}
                       placeholder="اسم الشارع، رقم العمارة، رقم الشقة، علامة مميزة..."
                       rows={2}
-                      className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:border-red-500 focus:bg-white resize-none shadow-2xs"
+                      className={`w-full bg-stone-50 border rounded-xl px-3 py-2 text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:bg-white resize-none shadow-2xs transition-all ${
+                        invalidField === 'address'
+                          ? 'border-red-500 ring-2 ring-red-500/30 bg-red-50/30 animate-pulse'
+                          : 'border-stone-200 focus:border-red-500'
+                      }`}
                     />
                   </div>
                 </div>
@@ -543,7 +634,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             {/* زر التأكيد الموحد (داشبورد + واتساب في نفس اللحظة) */}
             <div className="space-y-2 pt-1.5">
               {errorMsg && (
-                <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold flex items-center gap-2 animate-pulse">
+                <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold flex items-center gap-2 animate-bounce shadow-xs">
                   <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
                   <span>{errorMsg}</span>
                 </div>
@@ -553,10 +644,21 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 type="button"
                 disabled={isSubmitting}
                 onClick={handleSubmit}
-                className="w-full min-h-[50px] bg-gradient-to-r from-[#ff2b2b] to-[#e02424] hover:from-[#ff3d3d] hover:to-[#ff2b2b] text-white rounded-xl font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-red-600/30 active:scale-95 transition-all duration-150 disabled:opacity-50 cursor-pointer"
+                className={`w-full min-h-[50px] bg-gradient-to-r from-[#ff2b2b] to-[#e02424] hover:from-[#ff3d3d] hover:to-[#ff2b2b] text-white rounded-xl font-black text-sm flex items-center justify-center gap-2.5 shadow-lg shadow-red-600/30 active:scale-95 transition-all duration-150 cursor-pointer ${
+                  isSubmitting ? 'opacity-85 cursor-wait' : ''
+                }`}
               >
-                <Send className="w-4 h-4" />
-                <span>{isSubmitting ? 'جارٍ تسجيل الطلب والتوجيه...' : 'تأكيد الطلب وإرسال عبر الواتساب'}</span>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>جارٍ تجهيز طلبك وفتح الواتساب...</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    <span>تأكيد الطلب وإرسال عبر الواتساب</span>
+                  </>
+                )}
               </button>
 
               <p className="text-[11px] text-center text-stone-500 font-medium">
